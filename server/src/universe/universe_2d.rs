@@ -1,16 +1,16 @@
+use super::universe::Universe;
 use crate::{
     neighbour_data::{NeigbourIndeces2D, NeighbourData2D},
     nodes::{Node, Node2D},
     utils::{AgentSpecies, HyperParams},
 };
-
-use super::universe::Universe;
-
 use oorandom::Rand32;
 use pad::PadStr;
 use rayon::prelude::*;
+use serde::Serialize;
 use std::{collections::HashMap, fmt};
 
+#[derive(Serialize, Clone)]
 pub struct Universe2D {
     size: u32,
     nodes: Vec<Node2D>,
@@ -98,7 +98,7 @@ impl Universe for Universe2D {
 
 impl fmt::Debug for Universe2D {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} UNIVERSE 2D {}\n", "=".repeat(10), "=".repeat(10))?;
+        write!(f, "\n{} UNIVERSE 2D {}\n", "=".repeat(10), "=".repeat(10))?;
 
         write!(f, "size: {}\n", self.size)?;
         write!(f, "node size: {}\n", self.nodes.len())?;

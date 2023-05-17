@@ -1,8 +1,9 @@
 use oorandom::Rand32;
+use serde::Serialize;
 
 use super::neighbour_data::{NeighbourData, NeighbourData2D};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct Neighbours2D {
     pub top: u32,
     pub bottom: u32,

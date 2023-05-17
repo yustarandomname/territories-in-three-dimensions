@@ -1,4 +1,5 @@
 use oorandom::Rand32;
+use serde::Serialize;
 use std::{collections::HashMap, f32::consts::E};
 
 use crate::{
@@ -6,7 +7,7 @@ use crate::{
     utils::{AgentSpecies, HyperParams, SpeciesGraffiti, SpeciesPushStrength},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Node3D {
     pub index: u32,
     pub neighbours: NeigbourIndeces3D,      // indices of neighbours

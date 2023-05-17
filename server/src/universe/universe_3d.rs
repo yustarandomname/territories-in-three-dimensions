@@ -7,13 +7,16 @@ use crate::{
 use oorandom::Rand32;
 use pad::PadStr;
 use rayon::prelude::*;
+use serde::Serialize;
 use std::{collections::HashMap, fmt};
 
+#[derive(Clone, Serialize)]
 pub struct Universe3D {
     size: u32,
     nodes: Vec<Node3D>,
-    iteration: u32,
     hyper_params: HyperParams,
+
+    pub iteration: u32,
 }
 
 impl Universe for Universe3D {
@@ -106,7 +109,7 @@ impl Universe for Universe3D {
 
 impl fmt::Debug for Universe3D {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} UNIVERSE 3D {}\n", "=".repeat(10), "=".repeat(10))?;
+        write!(f, "\n{} UNIVERSE 3D {}\n", "=".repeat(10), "=".repeat(10))?;
 
         write!(f, "size: {}\n", self.size)?;
         write!(f, "node size: {}\n", self.nodes.len())?;

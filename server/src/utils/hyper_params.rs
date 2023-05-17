@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 #[derive(Clone, Debug, PartialEq, Copy)]
 
 /**
@@ -5,6 +7,7 @@
  * lambda: The amount of grafitti that is added to a node
  * beta: The amount of bias a agent will be
  */
+#[derive(Serialize)]
 pub struct HyperParams {
     pub gamma: f32,
     pub lambda: f32,
