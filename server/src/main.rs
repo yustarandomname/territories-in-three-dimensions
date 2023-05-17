@@ -1,55 +1,18 @@
+mod neighbour_data;
+mod nodes;
+mod universe;
+mod utils;
+
 use actix_web::{error, get, patch, post, web, App, HttpServer, Result};
 use serde::Deserialize;
 use std::sync::Mutex;
+use universe::{Universe2D, Universe3D};
 
-#[derive(Debug, Deserialize)]
-struct HyperParams {
-    gamma: f32,
-    lambda: f32,
-    beta: f32,
-}
-
-const DEFAULT_PARAMS: HyperParams = HyperParams {
-    gamma: 0.5,
-    lambda: 0.5,
-    beta: 0.1,
-};
-
-#[derive(Debug, Deserialize)]
-struct Universe {
-    size: u32,
-    agents: [u32; 2],
-    seed: u32,
-    iteration: u32,
-    hyper_params: HyperParams,
-}
-
-impl Universe {
-    fn new(size: u32, agents: [u32; 2], seed: u32) -> Universe {
-        Universe {
-            size,
-            agents,
-            seed,
-            iteration: 0,
-            hyper_params: DEFAULT_PARAMS,
-        }
-    }
-
-    fn increment(&mut self, iterations: u32) {
-        self.iteration += iterations;
-    }
-
-    fn set_params(&mut self, gamma: f32, lambda: f32, beta: f32) {
-        self.hyper_params = HyperParams {
-            gamma: gamma,
-            lambda: lambda,
-            beta: beta,
-        };
-    }
-}
+use crate::{universe::Universe, utils::HyperParams};
 
 struct AppStateWithCounter {
-    universe2d: Mutex<Option<Universe>>, // <- Mutex is necessary to mutate safely across threads
+    universe2d: Mutex<Option<Universe2D>>, // <- Mutex is necessary to mutate safely across threads
+    universe3d: Mutex<Option<Universe3D>>,
 }
 
 #[get("/")]
@@ -63,7 +26,7 @@ async fn get_state_2d(data: web::Data<AppStateWithCounter>) -> Result<String> {
 
 #[derive(Deserialize, Debug)]
 struct SetupSeedQuery {
-    seed: Option<u32>,
+    seed: Option<u64>,
 }
 
 #[post("/setup/{size}/{agents}")]
@@ -77,7 +40,7 @@ async fn setup_2d(
     let mut universe2d = data.universe2d.lock().unwrap();
 
     // Set up the universe
-    let new_universe = Universe::new(size, [agents, agents], query.seed.unwrap_or(0));
+    let new_universe = Universe2D::new(size, agents, query.seed.unwrap_or(100));
     universe2d.replace(new_universe);
 
     format!("Universe is created {:?}", universe2d)
@@ -96,20 +59,17 @@ async fn set_params_2d(
     query: web::Query<HyperParamsQuery>,
 ) -> String {
     let params = HyperParams {
-        gamma: query.gamma.unwrap_or(DEFAULT_PARAMS.gamma),
-        lambda: query.lambda.unwrap_or(DEFAULT_PARAMS.lambda),
-        beta: query.beta.unwrap_or(DEFAULT_PARAMS.beta),
+        gamma: query.gamma.unwrap_or(HyperParams::default().gamma),
+        lambda: query.lambda.unwrap_or(HyperParams::default().lambda),
+        beta: query.beta.unwrap_or(HyperParams::default().beta),
     };
 
     let mut universe2d = data.universe2d.lock().unwrap();
     match universe2d.as_mut() {
         None => format!("Universe is not initialized"),
         Some(universe) => {
-            universe.set_params(params.gamma, params.lambda, params.beta);
-            format!(
-                "Universe is defined with params {:?}",
-                universe.hyper_params
-            )
+            universe.set_hyper_params(params);
+            format!("Universe is now defined with params {:?}", params)
         }
     }
 }
@@ -130,7 +90,7 @@ async fn iterate_2d(
     match universe2d.as_mut() {
         None => format!("Universe is not initialized"),
         Some(universe) => {
-            universe.increment(iterations);
+            universe.iterate(iterations);
             format!(
                 "Universe is incremented by {} iterations. Current iteration is {}",
                 iterations, universe.iteration
@@ -144,6 +104,7 @@ async fn main() -> std::io::Result<()> {
     // Note: web::Data created _outside_ HttpServer::new closure
     let counter = web::Data::new(AppStateWithCounter {
         universe2d: Mutex::new(None),
+        universe3d: Mutex::new(None),
     });
 
     HttpServer::new(move || {
