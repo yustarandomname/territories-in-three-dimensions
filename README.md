@@ -4,10 +4,13 @@ This repository has the code to run a model of bacteria mixing in three-dimensio
 ## [SERVER] Running the model
 To run the model, you need to have Rust installed. You can install Rust by following the instructions on the [Rust website](https://www.rust-lang.org/tools/install). Once you have Rust installed, you can run the model by running the following command in the terminal:
 ```
+cd server
 cargo watch -x run
 ```
 
-This will start up a server on the port 8080. You can then open up a browser and go to the address `localhost:8080/cpu` to start up the model. It will return the begin configration of the model. 
+This will start up a server on the port 8080. You can then open up a browser and go to the address `localhost:8080/2d` to see the state of the model. 
+
+---
 
 ## [SERVER] Endpoints
 > WARNING: For now only the CPU endpoint is implemented. The GPU endpoint is still in development.
@@ -15,8 +18,7 @@ This will start up a server on the port 8080. You can then open up a browser and
 The server has two main endpoints
 
 ### GET `[2d|3d]`
-- [ ] TODO
-Get current state of the cpu model. State includes:
+Get current state of the model as JSON Object. State includes:
 - `size`: NUMBER - The size of the model
 - `agents`: [NUMBER, NUMBER] - The number of agents in the model
 - `seed`: NUMBER - The seed used to generate the model
@@ -33,14 +35,21 @@ Get current state of the cpu model. State includes:
     - `blue_agents`: NUMBER - The number of blue agents in the node
 
 ### POST `[2d|3d]/setup/<size>/<agents>?seed=<NUMBER>`
-- [ ] TODO
+Setup the model with a lattice size of `<size>x<size>` for 2d and `<size>x<size>x<size>` for 3d and `<agents>` agents. The seed is optional and will default to 100 if not provided.
+- `size`: NUMBER - The size of the lattice
+- `agents`: NUMBER - The number of agents in the model for each species
+- `seed?`: NUMBER - The seed used to generate the model
 
 ### POST `[2d|3d]/set_params?gamma=<NUMBER>&lambda=<NUMBER>&beta=<NUMBER>`
-- [ ] TODO
+Set the parameters of the model
+- `gamma`: NUMBER - TODO
+- `lambda`: TODO
+- `beta`: TODO
+
+---
 
 ### PATCH `[2d|3d]/iterate?amount=<NUMBER>`
-- [ ] TODO
-
+Iterate the model `<amount>` times
 
 ## [SERVER] Example sequence
 ```bash
@@ -53,5 +62,6 @@ POST localhost:8080/2d/set_params?beta=0.1
 # Iterate the model 100 times
 UPDATE localhost:8080/2d/iterate?amount=100
 
+# Get the current state of the model as a json object 
 GET localhost:8080/2d
 ```
