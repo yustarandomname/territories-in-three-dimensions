@@ -7,7 +7,7 @@ use crate::{
     utils::{AgentSpecies, HyperParams, SpeciesGraffiti, SpeciesPushStrength},
 };
 
-use super::Node;
+use super::NodeTrait;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Node2D {
@@ -20,7 +20,7 @@ pub struct Node2D {
     pub agents_out: [NeighbourAgentsOut2D; 2], // amount of outgoing agents per species
 }
 
-impl Node<NeigbourIndeces2D> for Node2D {
+impl NodeTrait<NeigbourIndeces2D> for Node2D {
     fn new(index: u32, edges: &HashMap<u32, NeigbourIndeces2D>) -> Node2D {
         Node2D {
             index,

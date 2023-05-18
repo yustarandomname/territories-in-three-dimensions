@@ -1,4 +1,4 @@
-use super::universe::Universe;
+use super::universe::UniverseTrait;
 use crate::{
     neighbour_data::{NeigbourIndeces3D, NeighbourData3D},
     nodes::Node3D,
@@ -19,7 +19,7 @@ pub struct Universe3D {
     pub iteration: u32,
 }
 
-impl Universe for Universe3D {
+impl UniverseTrait for Universe3D {
     fn new(size: u32, agent_size: u32, seed: u64) -> Universe3D {
         let mut prng = Rand32::new(seed);
 

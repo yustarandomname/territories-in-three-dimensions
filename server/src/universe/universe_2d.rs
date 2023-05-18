@@ -1,7 +1,7 @@
-use super::universe::Universe;
+use super::universe::UniverseTrait;
 use crate::{
     neighbour_data::{NeigbourIndeces2D, NeighbourData2D},
-    nodes::{Node, Node2D},
+    nodes::{Node2D, NodeTrait},
     utils::{AgentSpecies, HyperParams},
 };
 use oorandom::Rand32;
@@ -18,7 +18,7 @@ pub struct Universe2D {
     pub iteration: u32,
 }
 
-impl Universe for Universe2D {
+impl UniverseTrait for Universe2D {
     fn new(size: u32, agent_size: u32, seed: u64) -> Universe2D {
         let mut prng = Rand32::new(seed);
 

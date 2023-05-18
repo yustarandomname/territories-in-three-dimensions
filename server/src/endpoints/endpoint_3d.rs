@@ -1,6 +1,6 @@
 use crate::{
     endpoints::{HyperParamsQuery, IterateQuery, SetupSeedQuery},
-    universe::{Universe, Universe3D},
+    universe::{Universe3D, UniverseTrait},
     utils::HyperParams,
     AppGlobalState,
 };
