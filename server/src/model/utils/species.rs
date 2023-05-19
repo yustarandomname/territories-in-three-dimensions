@@ -19,7 +19,10 @@ pub struct Species<T: AddAssign + MulAssign> {
 
 impl<T: AddAssign + MulAssign + Copy> Species<T> {
     pub fn new(red: T, blue: T) -> Species<T> {
-        Species { red, blue }
+        Species {
+            red: red.clone(),
+            blue: blue.clone(),
+        }
     }
 
     pub fn set_red(&mut self, amount: T) {

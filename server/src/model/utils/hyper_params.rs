@@ -15,16 +15,14 @@ pub struct HyperParams {
 }
 
 impl HyperParams {
-    /**
-     * Creates a new HyperParams struct
-     * ```
-     * use server::utils::HyperParams;
-     * let params = HyperParams::new(0.5, 0.75, 0.1);
-     * assert_eq!(params.gamma, 0.5);
-     * assert_eq!(params.lambda, 0.75);
-     * assert_eq!(params.beta, 0.1);
-     * ```
-     */
+    /// Creates a new HyperParams struct
+    /// ```
+    /// use server::utils::HyperParams;
+    /// let params = HyperParams::new(0.5, 0.75, 0.1);
+    /// assert_eq!(params.gamma, 0.5);
+    /// assert_eq!(params.lambda, 0.75);
+    /// assert_eq!(params.beta, 0.1);
+    /// ```
     pub fn new(gamma: f32, lambda: f32, beta: f32) -> HyperParams {
         HyperParams {
             gamma,
@@ -35,10 +33,8 @@ impl HyperParams {
 }
 
 impl Default for HyperParams {
-    /**
-     * Creates a new HyperParams struct with default values
-     * These are sensible parameters and used in the paper: https://doi.org/10.1016/j.physa.2018.07.004
-     */
+    /// Creates a new HyperParams struct with default values
+    /// These are sensible parameters and used in the paper: https://doi.org/10.1016/j.physa.2018.07.004
     fn default() -> HyperParams {
         HyperParams {
             gamma: 0.5,

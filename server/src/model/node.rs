@@ -1,23 +1,16 @@
-use std::{collections::HashMap, f32::consts::E};
+use std::f32::consts::E;
 
 use oorandom::Rand32;
 use serde::Serialize;
 
-use crate::{
-    neighbour_data::{Dims, NeighbourAgentsOut, NeighbourIndeces},
-    utils::{AgentSpecies, HyperParams, SpeciesGraffiti, SpeciesPushStrength},
+use super::{
+    neighbour_data::{NeighbourAgentsOut, NeighbourIndeces},
+    utils::{
+        dimensions::Dims,
+        hyper_params::HyperParams,
+        species::{AgentSpecies, SpeciesGraffiti, SpeciesPushStrength},
+    },
 };
-
-pub trait NodeTrait<T>: Sized {
-    fn new(index: u32, edges: &HashMap<u32, T>) -> Self;
-    fn get_prng(&self) -> Rand32;
-    fn get_push_strength(&self, species: &AgentSpecies) -> f32;
-    fn add_agents(&mut self, amount: u32, species: AgentSpecies);
-    fn get_agents_with_species(&self, species: &AgentSpecies) -> u32;
-    fn update_graffiti_and_push_strength(&mut self, hyper_params: &HyperParams, _grid_size: u32);
-    fn move_agents_out(&mut self, nodes: &Vec<Self>, _grid_size: u32);
-    fn move_agents_in(&mut self, nodes: &Vec<Self>);
-}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Node {
@@ -105,43 +98,41 @@ impl Node {
         let mut total_neigh_push_strengths_red = 0.0;
         let mut total_neigh_push_strengths_blue = 0.0;
 
-        // let neighbour_push_stengths_iter: impl Iterator<u32> =
-        //     todo!("neighbour_push_stengths_iter");
-        // let neighbour_push_stengths_iter = neighbours_idx.data.iter().map(|neighbour_idx| {
-        //     let neighbour = &nodes[neighbour_idx as usize];
-        //     let red_push = neighbour.get_push_strength(&AgentSpecies::Red);
-        //     let blue_push = neighbour.get_push_strength(&AgentSpecies::Blue);
+        let neighbour_push_stengths_iter = neighbours_idx.data.iter().map(|neighbour_idx| {
+            let neighbour = &nodes[*neighbour_idx as usize];
+            let red_push = neighbour.get_push_strength(&AgentSpecies::Red);
+            let blue_push = neighbour.get_push_strength(&AgentSpecies::Blue);
 
-        //     total_neigh_push_strengths_red += red_push;
-        //     total_neigh_push_strengths_blue += blue_push;
-        //     (red_push, blue_push)
-        // });
+            total_neigh_push_strengths_red += red_push;
+            total_neigh_push_strengths_blue += blue_push;
+            (red_push, blue_push)
+        });
 
         // neighbour_push_stengths.0 is a Vec of all red neighbour push strengths
         // neighbour_push_stengths.1 is a Vec of all blue neighbour push strengths
-        // let neighbour_push_stengths: (Vec<f32>, Vec<f32>) = neighbour_push_stengths_iter.unzip(); // Vec<(ps1_red, ps2_blue), (ps_2_red, ps2_blue)> => (Vec(ps1_red, ps_2_red), Vec(ps1_blue, ps2_blue))
-        // assert!(neighbour_push_stengths.0.len() == neighbour_push_stengths.1.len());
+        let neighbour_push_stengths: (Vec<f32>, Vec<f32>) = neighbour_push_stengths_iter.unzip(); // Vec<(ps1_red, ps2_blue), (ps_2_red, ps2_blue)> => (Vec(ps1_red, ps_2_red), Vec(ps1_blue, ps2_blue))
+        assert!(neighbour_push_stengths.0.len() == neighbour_push_stengths.1.len());
 
         let mut red_agents_out = NeighbourAgentsOut::new(self.dimensions.clone());
         let mut blue_agents_out = NeighbourAgentsOut::new(self.dimensions.clone());
         let mut prng = self.get_prng();
 
         // 2 - Move agents out
-        // for _ in 0..self.red_agents {
-        //     red_agents_out.add_agent_to_random_cell(
-        //         &neighbour_push_stengths.1,      // vec of blue push strengths
-        //         total_neigh_push_strengths_blue, // sum of all blue push strengths
-        //         &mut prng,
-        //     );
-        // }
+        for _ in 0..self.red_agents {
+            red_agents_out.add_agent_to_random_cell(
+                &neighbour_push_stengths.1,      // vec of blue push strengths
+                total_neigh_push_strengths_blue, // sum of all blue push strengths
+                &mut prng,
+            );
+        }
 
-        // for _ in 0..self.blue_agents {
-        //     blue_agents_out.add_agent_to_random_cell(
-        //         &neighbour_push_stengths.0,     // vec of red push strengths
-        //         total_neigh_push_strengths_red, // sum of all red push strengths
-        //         &mut prng,
-        //     );
-        // }
+        for _ in 0..self.blue_agents {
+            blue_agents_out.add_agent_to_random_cell(
+                &neighbour_push_stengths.0,     // vec of red push strengths
+                total_neigh_push_strengths_red, // sum of all red push strengths
+                &mut prng,
+            );
+        }
 
         self.agents_out = [red_agents_out, blue_agents_out];
     }
@@ -151,6 +142,10 @@ impl Node {
         self.red_agents = 0;
         self.blue_agents = 0;
 
-        todo!("move_agents_in")
+        for (id, side_idx) in neighbours_idx.data.iter().enumerate() {
+            let node_agents = &nodes[*side_idx as usize].agents_out;
+            self.red_agents += node_agents[0].opposite_field(id);
+            self.blue_agents += node_agents[1].opposite_field(id);
+        }
     }
 }

@@ -1,19 +1,7 @@
 use oorandom::Rand32;
 use serde::Serialize;
 
-/// # Dims
-///
-/// ```
-/// assert!(Dims::One as u32 == 1);
-/// assert!(Dims::Two as u32 == 2);
-/// assert!(Dims::Three as u32 == 3);
-/// ```
-#[derive(Debug, Clone, Serialize)]
-pub enum Dims {
-    One = 1,
-    Two = 2,
-    Three = 3,
-}
+use super::utils::dimensions::Dims;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct NeighbourIndeces {
@@ -55,7 +43,23 @@ impl NeighbourAgentsOut {
         total_neighbour_push_stengths: f32,
         prng: &mut Rand32,
     ) {
-        todo!("add_agent_to_random_cell")
+        assert!(neighbour_push_stengths.len() == self.data.len());
+
+        let random_number = prng.rand_float() * total_neighbour_push_stengths;
+        let mut sum = 0.0;
+        for (i, neighbour_push_stength) in neighbour_push_stengths.iter().enumerate() {
+            sum += neighbour_push_stength;
+            if sum >= random_number {
+                self.data[i] += 1;
+                break;
+            }
+        }
+    }
+
+    pub fn opposite_field(&self, id: usize) -> u32 {
+        let dimension_size = self.dimensions.clone() as usize;
+        let opposite_id = (id + dimension_size) % self.data.len();
+        self.data[opposite_id]
     }
 }
 

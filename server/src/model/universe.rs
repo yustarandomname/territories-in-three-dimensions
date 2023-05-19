@@ -1,22 +1,17 @@
-use crate::{
-    neighbour_data::{Dims, NeighbourIndeces},
-    nodes::Node,
-    utils::{AgentSpecies, HyperParams},
-};
 use oorandom::Rand32;
 use rayon::prelude::*;
 use serde::Serialize;
-use std::fmt::{Debug, Display};
 
-pub trait UniverseTrait: Debug + Display {
-    fn new(size: u32, agent_size: u32, seed: u64) -> Self;
-    fn set_hyper_params(&mut self, hyper_params: HyperParams);
-    fn tick(&mut self);
-    fn iterate(&mut self, iterations: u32);
-}
+use super::{
+    node::Node,
+    utils::{
+        create_edges::create_edges_for, dimensions::Dims, hyper_params::HyperParams,
+        species::AgentSpecies,
+    },
+};
 
 #[derive(Serialize, Clone)]
-struct Universe {
+pub struct Universe {
     size: u32,
     nodes: Vec<Node>,
     hyper_params: HyperParams,
@@ -24,83 +19,12 @@ struct Universe {
     total_size: u32,
 }
 
-fn edges_for_1d(size: u32) -> Vec<NeighbourIndeces> {
-    let mut edges: Vec<NeighbourIndeces> = Vec::new();
-
-    for i in 0..size {
-        let left_index = (i + size - 1) % size;
-        let right_index = (i + 1) % size;
-
-        let new_edges = NeighbourIndeces::new(vec![right_index], vec![left_index], Dims::One);
-    }
-
-    edges
-}
-
-fn edges_for_2d(size: u32) -> Vec<NeighbourIndeces> {
-    let mut edges: Vec<NeighbourIndeces> = Vec::new();
-
-    for y in 0..size {
-        for x in 0..size {
-            let index = y * size + x;
-
-            let left_index = y * size + (x + size - 1) % size;
-            let right_index = y * size + (x + 1) % size;
-            let top_index = (y + size - 1) % size * size + x;
-            let bottom_index = (y + 1) % size * size + x;
-
-            let new_edges = NeighbourIndeces::new(
-                vec![top_index, right_index],
-                vec![bottom_index, left_index],
-                Dims::Two,
-            );
-
-            edges.push(new_edges);
-        }
-    }
-
-    edges
-}
-
-fn edges_for_3d(size: u32) -> Vec<NeighbourIndeces> {
-    let mut edges: Vec<NeighbourIndeces> = Vec::new();
-
-    for z in 0..size {
-        for y in 0..size {
-            for x in 0..size {
-                let index = z * size * size + y * size + x;
-
-                let left_index = z * size * size + y * size + (x + size - 1) % size;
-                let right_index = z * size * size + y * size + (x + 1) % size;
-                let top_index = z * size * size + (y + size - 1) % size * size + x;
-                let bottom_index = z * size * size + (y + 1) % size * size + x;
-                let front_index = (z + size - 1) % size * size * size + y * size + x;
-                let back_index = (z + 1) % size * size * size + y * size + x;
-
-                let new_edges = NeighbourIndeces::new(
-                    vec![top_index, right_index, front_index],
-                    vec![bottom_index, left_index, back_index],
-                    Dims::Three,
-                );
-
-                edges.push(new_edges);
-            }
-        }
-    }
-
-    edges
-}
-
 impl Universe {
     pub fn new(size: u32, agent_size: u32, dimensions: Dims, seed: Option<u64>) -> Self {
         let mut prng = Rand32::new(seed.unwrap_or(100));
         let total_size = size.pow(dimensions.clone() as u32); // if size=10 and dimensions=3, total_size=1000 (10*10*10)
 
-        let edges = match &dimensions {
-            Dims::One => edges_for_1d(size),
-            Dims::Two => edges_for_2d(size),
-            Dims::Three => edges_for_3d(size),
-        };
+        let edges = create_edges_for(&dimensions, size);
 
         let mut nodes: Vec<Node> = (0..total_size)
             .map(|index| Node::new(index, &edges, &dimensions))
@@ -150,6 +74,26 @@ impl Universe {
         });
 
         self.iteration += 1;
+    }
+
+    /// Will iterate the universe by the given amount of iterations
+    /// # Arguments
+    /// * `iterations` - The amount of iterations to iterate the universe by
+    ///
+    /// # Example
+    /// ```
+    /// use server::model::Universe;
+    /// use server::model::dimensions::Dims;
+    ///
+    /// // Create a new universe with size 4x4, 100 agents for each species, 2 dimensions and no seed provided
+    /// let mut universe = Universe::new(4, 100, Dims::Two, None);
+    /// assert_eq!(universe.iteration, 0);
+    ///
+    /// // Iterate the universe by 10 iterations
+    /// universe.iterate(10);
+    /// assert_eq!(universe.iteration, 10);
+    pub fn iterate(&mut self, iterations: u32) {
+        (0..iterations).for_each(|_| self.tick());
     }
 }
 
@@ -204,6 +148,7 @@ mod test_2d_universe {
         universe.tick();
         assert_eq!(total_agent_size(&universe), 200, "2 iteration agents");
 
+        // Test to see if the universe is deterministic
         let cache = vec![
             (5, 5),
             (8, 2),
