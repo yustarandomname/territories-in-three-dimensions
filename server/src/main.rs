@@ -15,7 +15,7 @@ pub struct AppGlobalState {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Note: web::Data created _outside_ HttpServer::new closure
-    let counter = web::Data::new(AppGlobalState {
+    let universe_state = web::Data::new(AppGlobalState {
         universe1d: Mutex::new(None),
         universe2d: Mutex::new(None),
         universe3d: Mutex::new(None),
@@ -23,7 +23,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .app_data(counter.clone())
+            .app_data(universe_state.clone())
             .service(web::scope("/v1").service(endpoints_model()))
     })
     .bind(("127.0.0.1", 8080))?

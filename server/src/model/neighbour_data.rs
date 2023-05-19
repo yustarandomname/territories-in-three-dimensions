@@ -1,9 +1,9 @@
 use oorandom::Rand32;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::utils::dimensions::Dims;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NeighbourIndeces {
     pub data: Vec<u32>, // neighbour_id and opposite_id
     dimensions: Dims,
@@ -23,7 +23,7 @@ impl NeighbourIndeces {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NeighbourAgentsOut {
     pub data: Vec<u32>,
     dimensions: Dims,

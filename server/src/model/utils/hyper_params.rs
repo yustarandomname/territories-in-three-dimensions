@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Copy)]
 
@@ -7,7 +7,7 @@ use serde::Serialize;
  * lambda: The amount of grafitti that is added to a node
  * beta: The amount of bias a agent will be
  */
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct HyperParams {
     pub gamma: f32,
     pub lambda: f32,
@@ -17,7 +17,7 @@ pub struct HyperParams {
 impl HyperParams {
     /// Creates a new HyperParams struct
     /// ```
-    /// use server::utils::HyperParams;
+    /// use server::model::hyper_params::HyperParams;
     /// let params = HyperParams::new(0.5, 0.75, 0.1);
     /// assert_eq!(params.gamma, 0.5);
     /// assert_eq!(params.lambda, 0.75);

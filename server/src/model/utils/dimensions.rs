@@ -1,15 +1,16 @@
 use std::fmt::{Display, Formatter};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// # Dims
 ///
 /// ```
+/// use server::model::dimensions::Dims;
 /// assert!(Dims::One as u32 == 1);
 /// assert!(Dims::Two as u32 == 2);
 /// assert!(Dims::Three as u32 == 3);
 /// ```
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Dims {
     One = 1,
     Two = 2,

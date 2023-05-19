@@ -1,6 +1,6 @@
 use oorandom::Rand32;
 use rayon::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::{
     node::Node,
@@ -10,13 +10,14 @@ use super::{
     },
 };
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Deserialize)]
+#[readonly::make]
 pub struct Universe {
-    size: u32,
-    nodes: Vec<Node>,
-    hyper_params: HyperParams,
+    pub size: u32,
+    pub nodes: Vec<Node>,
+    pub hyper_params: HyperParams,
     pub iteration: u32,
-    total_size: u32,
+    pub total_size: u32,
 }
 
 impl Universe {
@@ -32,7 +33,7 @@ impl Universe {
 
         // Set initial agents
         (0..agent_size * 2).for_each(|id| {
-            let node_index = prng.rand_range(0..(size * size));
+            let node_index = prng.rand_range(0..total_size);
             let species = if id % 2 == 0 {
                 AgentSpecies::Red
             } else {

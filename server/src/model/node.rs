@@ -1,7 +1,7 @@
 use std::f32::consts::E;
 
 use oorandom::Rand32;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::{
     neighbour_data::{NeighbourAgentsOut, NeighbourIndeces},
@@ -12,7 +12,7 @@ use super::{
     },
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
     pub index: u32,
     pub neighbours: NeighbourIndeces,       // indices of neighbours

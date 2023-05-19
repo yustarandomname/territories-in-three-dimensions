@@ -1,6 +1,6 @@
 use std::ops::{AddAssign, MulAssign};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub type SpeciesGraffiti = Species<f32>;
 pub type SpeciesPushStrength = Species<f32>;
@@ -11,7 +11,7 @@ pub enum AgentSpecies {
     Blue,
 }
 
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Species<T: AddAssign + MulAssign> {
     pub red: T,
     pub blue: T,
