@@ -4,32 +4,9 @@ use actix_web::{error, get, patch, post, web, HttpResponse, Responder, Result};
 
 use crate::{
     endpoints::{HyperParamsQuery, IterateQuery, SetupSeedQuery},
-    model::{dimensions::Dims, hyper_params::HyperParams, Universe},
+    model::{dimensions::Dims, hyper_params::HyperParams, AgentUniverse, Universe},
     AppGlobalState,
 };
-
-fn get_universe(data: web::Data<AppGlobalState>, dimensions: Dims) -> Result<Universe> {
-    let universe: MutexGuard<Option<Universe>>;
-    match dimensions {
-        Dims::One => {
-            universe = data.universe1d.lock().unwrap();
-        }
-        Dims::Two => {
-            universe = data.universe2d.lock().unwrap();
-        }
-        Dims::Three => {
-            universe = data.universe3d.lock().unwrap();
-        }
-    }
-
-    let universe = universe.clone().ok_or(error::ErrorBadRequest(format!(
-        "There is no universe for {}. Create one first by calling `POST /v1/{}/setup/<size>/<agents>`.",
-        dimensions,
-        dimensions
-    )))?;
-
-    Ok(universe)
-}
 
 fn mutate_universe(
     data: web::Data<AppGlobalState>,
@@ -67,6 +44,18 @@ pub async fn get_state(
 
     mutate_universe(data, &dimensions, move |universe| {
         Ok(HttpResponse::Ok().json(universe.clone()))
+    })
+}
+
+#[get("/agent-nodes")]
+pub async fn get_state_agents(
+    data: web::Data<AppGlobalState>,
+    path: web::Path<String>,
+) -> Result<impl Responder> {
+    let dimensions = Dims::from(path.as_str());
+
+    mutate_universe(data, &dimensions, move |universe| {
+        Ok(HttpResponse::Ok().json(AgentUniverse::from(universe.clone())))
     })
 }
 

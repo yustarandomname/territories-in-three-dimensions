@@ -3,7 +3,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    node::Node,
+    node::{AgentNode, Node},
     utils::{
         create_edges::create_edges_for, dimensions::Dims, hyper_params::HyperParams,
         species::AgentSpecies,
@@ -95,6 +95,33 @@ impl Universe {
     /// assert_eq!(universe.iteration, 10);
     pub fn iterate(&mut self, iterations: u32) {
         (0..iterations).for_each(|_| self.tick());
+    }
+}
+
+#[derive(Serialize, Clone, Deserialize)]
+pub struct AgentUniverse {
+    pub size: u32,
+    pub nodes: Vec<AgentNode>,
+    pub hyper_params: HyperParams,
+    pub iteration: u32,
+    pub total_size: u32,
+}
+
+impl From<Universe> for AgentUniverse {
+    fn from(universe: Universe) -> Self {
+        let nodes = universe
+            .nodes
+            .into_iter()
+            .map(|node| AgentNode::from(node))
+            .collect();
+
+        AgentUniverse {
+            size: universe.size,
+            nodes,
+            hyper_params: universe.hyper_params,
+            iteration: universe.iteration,
+            total_size: universe.total_size,
+        }
     }
 }
 

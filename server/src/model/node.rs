@@ -149,3 +149,18 @@ impl Node {
         }
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentNode {
+    pub blue_agents: u32,
+    pub red_agents: u32,
+}
+
+impl From<Node> for AgentNode {
+    fn from(agent: Node) -> Self {
+        AgentNode {
+            blue_agents: agent.blue_agents,
+            red_agents: agent.red_agents,
+        }
+    }
+}

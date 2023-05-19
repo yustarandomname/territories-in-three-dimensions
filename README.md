@@ -17,7 +17,7 @@ This will start up a server on the port 8080. You can then open up a browser and
 
 The server has two main endpoints
 
-### GET `[2d|3d]`
+### GET `[1d|2d|3d]`
 Get current state of the model as JSON Object. State includes:
 - `size`: NUMBER - The size of the model
 - `agents`: [NUMBER, NUMBER] - The number of agents in the model
@@ -34,13 +34,17 @@ Get current state of the model as JSON Object. State includes:
     - `red_agents`: NUMBER - The number of red agents in the node
     - `blue_agents`: NUMBER - The number of blue agents in the node
 
-### POST `[2d|3d]/setup/<size>/<agents>?seed=<NUMBER>`
+### GET `[1d|2d|3d]/agent-nodes`
+Get current state of the model as JSON Object. Is identical to the `GET [1d|2d|3d]` endpoint except that the `nodes` field is a list of agent nodes instead of nodes. Agent nodes are defined by:
+- `nodes`: [{agents_red: NUMBER, agents_blue: NUMBER}]
+
+### POST `[1d|2d|3d]/setup/<size>/<agents>?seed=<NUMBER>`
 Setup the model with a lattice size of `<size>x<size>` for 2d and `<size>x<size>x<size>` for 3d and `<agents>` agents. The seed is optional and will default to 100 if not provided.
 - `size`: NUMBER - The size of the lattice
 - `agents`: NUMBER - The number of agents in the model for each species
 - `seed?`: NUMBER - The seed used to generate the model
 
-### POST `[2d|3d]/set_params?gamma=<NUMBER>&lambda=<NUMBER>&beta=<NUMBER>`
+### POST `[1d|2d|3d]/set_params?gamma=<NUMBER>&lambda=<NUMBER>&beta=<NUMBER>`
 Set the parameters of the model
 - `gamma`: NUMBER - TODO
 - `lambda`: TODO
@@ -48,7 +52,7 @@ Set the parameters of the model
 
 ---
 
-### PATCH `[2d|3d]/iterate?amount=<NUMBER>`
+### PATCH `[1d|2d|3d]/iterate?amount=<NUMBER>`
 Iterate the model `<amount>` times
 
 ## [SERVER] Example sequence

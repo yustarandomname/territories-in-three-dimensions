@@ -3,5 +3,5 @@ mod node;
 mod universe;
 mod utils;
 
-pub use universe::Universe;
+pub use universe::*;
 pub use utils::*;
