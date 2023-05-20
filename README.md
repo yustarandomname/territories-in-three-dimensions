@@ -17,6 +17,9 @@ This will start up a server on the port 8080. You can then open up a browser and
 
 The server has two main endpoints
 
+### GET `alive`
+Returns for each universe dimension if it is Some or None. If it is Some, then the universe is alive and can be used. If it is None, then the universe is dead and cannot be used.
+
 ### GET `[1d|2d|3d]`
 Get current state of the model as JSON Object. State includes:
 - `size`: NUMBER - The size of the model
@@ -47,8 +50,8 @@ Setup the model with a lattice size of `<size>x<size>` for 2d and `<size>x<size>
 ### POST `[1d|2d|3d]/set_params?gamma=<NUMBER>&lambda=<NUMBER>&beta=<NUMBER>`
 Set the parameters of the model
 - `gamma`: NUMBER - TODO
-- `lambda`: TODO
-- `beta`: TODO
+- `lambda`: NUMBER - TODO
+- `beta`: NUMBER - TODO
 
 ---
 
@@ -64,7 +67,7 @@ POST localhost:8080/2d/10/100?seed=1234
 POST localhost:8080/2d/set_params?beta=0.1
 
 # Iterate the model 100 times
-UPDATE localhost:8080/2d/iterate?amount=100
+PATCH localhost:8080/2d/iterate?amount=100
 
 # Get the current state of the model as a json object 
 GET localhost:8080/2d
