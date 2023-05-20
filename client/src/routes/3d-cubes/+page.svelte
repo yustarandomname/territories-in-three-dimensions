@@ -1,0 +1,103 @@
+<script>
+	import { Canvas } from '@threlte/core';
+	import Scene from './Scene.svelte';
+	import { universeStore } from './universeStore';
+	import { Button, ButtonGroup, Card, Input, Label, Modal, TabItem, Tabs } from 'flowbite-svelte';
+	import { onMount } from 'svelte';
+
+	let model_open = true;
+	let lattice_size = 4;
+	let agent_count = 5000;
+	let delta_time = 100;
+
+	onMount(() => {
+		universeStore.update();
+	});
+</script>
+
+<Tabs
+	style="pill"
+	class="justify-center absolute w-full p-3 bg-white/90"
+	contentClass="hidden"
+	divider={false}
+>
+	<TabItem title="1d" />
+	<TabItem title="2d" />
+	<TabItem open title="3d" />
+</Tabs>
+
+{#if $universeStore}
+	<div style="height:100%">
+		<div>{JSON.stringify($universeStore)}</div>
+		<Canvas>
+			<Scene />
+		</Canvas>
+	</div>
+
+	<div class="fixed bottom-4 right-4 flex flex-col gap-3">
+		<Card>
+			<h3>Setting</h3>
+			<Button on:click={() => (model_open = true)}>Reset model</Button>
+		</Card>
+		<Card>
+			<ButtonGroup>
+				<Button disabled>{$universeStore.iterations || 0}</Button>
+				<Input
+					type="number"
+					name="delta_time"
+					placeholder="Delta time"
+					bind:value={delta_time}
+					required
+				/>
+				<Button on:click={() => universeStore.increment(delta_time)}>Apply step</Button>
+			</ButtonGroup>
+		</Card>
+	</div>
+{/if}
+
+<Modal
+	size="md"
+	title="Setup simulation"
+	bind:open={model_open}
+	on:close={() => (model_open = true)}
+>
+	<p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">
+		TODO: Introduction what this app is Lorem, ipsum dolor sit amet consectetur adipisicing elit.
+		Dignissimos obcaecati sequi fugit, vero similique ratione eligendi! Ipsam nisi aut possimus?
+		Eligendi harum culpa eos ducimus architecto nobis similique totam asperiores?
+	</p>
+
+	<form class="flex flex-col space-y-6" action="#">
+		<Label class="space-y-2">
+			<span>Size</span>
+			<Input
+				type="number"
+				name="Size"
+				placeholder="Size of lattice"
+				bind:value={lattice_size}
+				required
+			/>
+		</Label>
+		<Label class="space-y-2">
+			<span>Number of agents for each species</span>
+			<Input
+				type="number"
+				name="agent_count"
+				placeholder="Number of agents"
+				bind:value={agent_count}
+				required
+			/>
+		</Label>
+
+		<Button
+			type="submit"
+			class="w-full1"
+			on:click={() => {
+				universeStore.setup(lattice_size, agent_count);
+				model_open = false;
+			}}
+		>
+			Start simulation
+		</Button>
+	</form>
+</Modal>
