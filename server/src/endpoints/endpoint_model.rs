@@ -81,10 +81,10 @@ pub async fn setup(
         }
     }
     // Set up the universe
-    let new_universe = Universe::new(size, agents, dimensions, query.seed);
+    let new_universe = Universe::new(size, agents, dimensions.clone(), query.seed);
     universe.replace(new_universe.clone());
 
-    Ok(web::Json(new_universe))
+    Ok(HttpResponse::Ok().body(format!("Universe {} is setup", dimensions.to_string())))
 }
 
 #[post("/set_params")]
@@ -106,7 +106,7 @@ pub async fn set_params(
     })
 }
 
-#[patch("/iterate")]
+#[post("/iterate")]
 pub async fn iterate(
     data: web::Data<AppGlobalState>,
     path: web::Path<String>,
@@ -115,13 +115,27 @@ pub async fn iterate(
     let dimensions = Dims::from(path.as_str());
     let iterations = query.amount.unwrap_or(1);
 
-    mutate_universe(data, &dimensions, move |universe| {
-        universe.iterate(iterations);
-        Ok(HttpResponse::Ok().body(format!(
-            "Universe is incremented by {} iterations. Current iteration is {}",
-            iterations, universe.iteration
-        )))
-    })
+    let mut universe: MutexGuard<Option<Universe>>;
+    match dimensions {
+        Dims::One => {
+            universe = data.universe1d.lock().unwrap();
+        }
+        Dims::Two => {
+            universe = data.universe2d.lock().unwrap();
+        }
+        Dims::Three => {
+            universe = data.universe3d.lock().unwrap();
+        }
+    }
+
+    match universe.as_mut() {
+        Some(u) => {
+            u.iterate(iterations);
+
+            Ok(HttpResponse::Ok().body(format!("Universe is set to {} iteration", u.iteration)))
+        }
+        None => Ok(HttpResponse::Ok().body("Big error")),
+    }
 }
 
 #[cfg(test)]
