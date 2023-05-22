@@ -1,7 +1,6 @@
-use std::f32::consts::E;
-
 use oorandom::Rand32;
 use serde::{Deserialize, Serialize};
+use std::f32::consts::E;
 
 use super::{
     neighbour_data::{NeighbourAgentsOut, NeighbourIndeces},
@@ -159,8 +158,8 @@ pub struct AgentNode {
 impl From<Node> for AgentNode {
     fn from(agent: Node) -> Self {
         AgentNode {
-            blue_agents: agent.blue_agents,
-            red_agents: agent.red_agents,
+            blue_agents: agent.graffiti.blue as u32,
+            red_agents: agent.graffiti.red as u32,
         }
     }
 }

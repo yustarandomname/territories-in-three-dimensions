@@ -39,7 +39,7 @@ impl Default for HyperParams {
         HyperParams {
             gamma: 0.5,
             lambda: 0.5,
-            beta: 1.0 / 100.0,
+            beta: 0.01,
         }
     }
 }
