@@ -8,7 +8,7 @@
 	let model_open = true;
 	let lattice_size = 4;
 	let agent_count = 5000;
-	let delta_time = 100;
+	let delta_time = 10;
 
 	onMount(() => {
 		universeStore.update();
@@ -28,9 +28,8 @@
 
 {#if $universeStore}
 	<div style="height:100%">
-		<div>{JSON.stringify($universeStore)}</div>
 		<Canvas>
-			<Scene />
+			<Scene universe={$universeStore} />
 		</Canvas>
 	</div>
 
@@ -41,7 +40,7 @@
 		</Card>
 		<Card>
 			<ButtonGroup>
-				<Button disabled>{$universeStore.iterations || 0}</Button>
+				<Button disabled>{$universeStore.iteration || 0}</Button>
 				<Input
 					type="number"
 					name="delta_time"
