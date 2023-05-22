@@ -1,33 +1,68 @@
 mod endpoints;
-mod neighbour_data;
-mod nodes;
-mod universe;
-mod utils;
+mod model;
 
-use actix_web::{web, App, HttpServer};
-use endpoints::{endpoints_2d, endpoints_3d};
+use actix_cors::Cors;
+use actix_web::{
+    get,
+    web::{self, Data},
+    App, HttpResponse, HttpServer, Responder, Result,
+};
+use endpoints::endpoints_model;
+use model::Universe;
+use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use universe::{Universe2D, Universe3D};
 
 pub struct AppGlobalState {
-    universe2d: Mutex<Option<Universe2D>>, // <- Mutex is necessary to mutate safely across threads
-    universe3d: Mutex<Option<Universe3D>>,
+    universe1d: Mutex<Option<Universe>>, // <- Mutex is necessary to mutate safely across threads
+    universe2d: Mutex<Option<Universe>>,
+    universe3d: Mutex<Option<Universe>>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct AliveResponse {
+    universe1d: bool,
+    universe2d: bool,
+    universe3d: bool,
+}
+
+#[get("/alive")]
+async fn is_alive(data: Data<AppGlobalState>) -> Result<impl Responder> {
+    let universe1d = data.universe1d.lock().unwrap();
+    let universe2d = data.universe2d.lock().unwrap();
+    let universe3d = data.universe3d.lock().unwrap();
+
+    let resp = AliveResponse {
+        universe1d: universe1d.is_some(),
+        universe2d: universe2d.is_some(),
+        universe3d: universe3d.is_some(),
+    };
+
+    Ok(HttpResponse::Ok().json(resp))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Note: web::Data created _outside_ HttpServer::new closure
-    let counter = web::Data::new(AppGlobalState {
+    let universe_state = web::Data::new(AppGlobalState {
+        universe1d: Mutex::new(None),
         universe2d: Mutex::new(None),
         universe3d: Mutex::new(None),
     });
 
     HttpServer::new(move || {
-        App::new().app_data(counter.clone()).service(
-            web::scope("/v1")
-                .service(endpoints_2d())
-                .service(endpoints_3d()),
-        )
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allow_any_header()
+            .allow_any_method();
+
+        App::new()
+            .wrap(cors)
+            .app_data(universe_state.clone())
+            .service(
+                web::scope("/v1")
+                    .service(is_alive)
+                    .service(endpoints_model()),
+            )
     })
     .bind(("127.0.0.1", 8080))?
     .run()

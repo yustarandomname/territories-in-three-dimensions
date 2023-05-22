@@ -20,6 +20,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-cors"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b340e9cfa5b08690aae90fb61beb44e9b06f44fe3d0f93781aaa58cfba86245e"
+dependencies = [
+ "actix-utils",
+ "actix-web",
+ "derive_more",
+ "futures-util",
+ "log",
+ "once_cell",
+ "smallvec",
+]
+
+[[package]]
 name = "actix-http"
 version = "3.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -866,6 +881,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "readonly"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb656d27c22b5c47154452686cae5e096f12e124daacb36a0bfcb32dbebb39e3"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.16",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -965,11 +991,13 @@ dependencies = [
 name = "server"
 version = "0.1.0"
 dependencies = [
+ "actix-cors",
  "actix-web",
  "isosurface",
  "oorandom",
  "pad",
  "rayon",
+ "readonly",
  "serde",
 ]
 

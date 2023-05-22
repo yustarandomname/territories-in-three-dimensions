@@ -17,7 +17,10 @@ This will start up a server on the port 8080. You can then open up a browser and
 
 The server has two main endpoints
 
-### GET `[2d|3d]`
+### GET `alive`
+Returns for each universe dimension if it is Some or None. If it is Some, then the universe is alive and can be used. If it is None, then the universe is dead and cannot be used.
+
+### GET `[1d|2d|3d]`
 Get current state of the model as JSON Object. State includes:
 - `size`: NUMBER - The size of the model
 - `agents`: [NUMBER, NUMBER] - The number of agents in the model
@@ -34,21 +37,25 @@ Get current state of the model as JSON Object. State includes:
     - `red_agents`: NUMBER - The number of red agents in the node
     - `blue_agents`: NUMBER - The number of blue agents in the node
 
-### POST `[2d|3d]/setup/<size>/<agents>?seed=<NUMBER>`
+### GET `[1d|2d|3d]/agent-nodes`
+Get current state of the model as JSON Object. Is identical to the `GET [1d|2d|3d]` endpoint except that the `nodes` field is a list of agent nodes instead of nodes. Agent nodes are defined by:
+- `nodes`: [{agents_red: NUMBER, agents_blue: NUMBER}]
+
+### POST `[1d|2d|3d]/setup/<size>/<agents>?seed=<NUMBER>`
 Setup the model with a lattice size of `<size>x<size>` for 2d and `<size>x<size>x<size>` for 3d and `<agents>` agents. The seed is optional and will default to 100 if not provided.
 - `size`: NUMBER - The size of the lattice
 - `agents`: NUMBER - The number of agents in the model for each species
 - `seed?`: NUMBER - The seed used to generate the model
 
-### POST `[2d|3d]/set_params?gamma=<NUMBER>&lambda=<NUMBER>&beta=<NUMBER>`
+### POST `[1d|2d|3d]/set_params?gamma=<NUMBER>&lambda=<NUMBER>&beta=<NUMBER>`
 Set the parameters of the model
 - `gamma`: NUMBER - TODO
-- `lambda`: TODO
-- `beta`: TODO
+- `lambda`: NUMBER - TODO
+- `beta`: NUMBER - TODO
 
 ---
 
-### PATCH `[2d|3d]/iterate?amount=<NUMBER>`
+### PATCH `[1d|2d|3d]/iterate?amount=<NUMBER>`
 Iterate the model `<amount>` times
 
 ## [SERVER] Example sequence
@@ -60,7 +67,7 @@ POST localhost:8080/2d/10/100?seed=1234
 POST localhost:8080/2d/set_params?beta=0.1
 
 # Iterate the model 100 times
-UPDATE localhost:8080/2d/iterate?amount=100
+PATCH localhost:8080/2d/iterate?amount=100
 
 # Get the current state of the model as a json object 
 GET localhost:8080/2d

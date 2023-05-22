@@ -5,8 +5,8 @@
 		BackSide,
 		BufferAttribute,
 		BufferGeometry,
-		DoubleSide,
 		Float32BufferAttribute,
+		FrontSide,
 		MeshBasicMaterial
 	} from 'three';
 	import { DEG2RAD } from 'three/src/math/MathUtils';
@@ -50,7 +50,7 @@
 	geometry.setAttribute('color', new Float32BufferAttribute(colors, 8));
 
 	let materials: MeshBasicMaterial[] = [
-		new MeshBasicMaterial({ color: '#dc2626', side: DoubleSide }),
+		new MeshBasicMaterial({ color: '#dc2626', side: FrontSide }),
 		new MeshBasicMaterial({ color: '#1d4ed8', side: BackSide })
 	];
 </script>
