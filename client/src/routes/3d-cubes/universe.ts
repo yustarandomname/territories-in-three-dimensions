@@ -11,9 +11,9 @@ interface HyperParams {
 
 interface Universe {
     size: number;
-    nodes: Node[];
+    nodes: AgentNode[];
     hyper_params: HyperParams;
-    iterations: Number;
+    iteration: Number;
     total_size: Number;
 }
 
