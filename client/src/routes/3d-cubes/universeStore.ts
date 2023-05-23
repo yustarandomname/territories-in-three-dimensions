@@ -1,37 +1,55 @@
 import { writable } from 'svelte/store';
 
+interface Universes {
+    u1?: Universe;
+    u2?: Universe;
+    u3?: Universe;
+}
+
 function createUniverseStore() {
-    const { subscribe, set } = writable<Universe>(undefined);
+    const { subscribe, update } = writable<Universes>({
+        u1: undefined,
+        u2: undefined,
+        u3: undefined
+    });
 
     return {
         subscribe,
-        update: async () => {
+        update: async (dim: number) => {
             try {
 
-                const response = await fetch('http://localhost:8080/v1/3d/agent-nodes', {
+                const response = await fetch(`http://localhost:8080/v1/${dim}d/agent-nodes`, {
                     method: 'GET'
                 });
 
                 const json: Universe = await response.json();
-                console.log({ json })
-                set(json)
+
+                update(us => {
+                    let index = `u${dim}` as keyof Universes;
+                    us[index] = json;
+                    return us;
+                })
             } catch (e: any) {
-                set(undefined);
+                update(us => {
+                    let index = `u${dim}` as keyof Universes;
+                    us[index] = undefined;
+                    return us;
+                })
             }
         },
-        setup: async (size: number, agents: number) => {
-            const response = await fetch(`http://localhost:8080/v1/3d/setup/${size}/${agents}`, { method: 'POST' });
+        setup: async (dims: number, size: number, agents: number) => {
+            const response = await fetch(`http://localhost:8080/v1/${dims}d/setup/${size}/${agents}`, { method: 'POST' });
             console.log({ response })
-            universeStore.update();
+            universeStore.update(dims);
         },
-        increment: async (amount: number) => {
-            const response = await fetch(`http://localhost:8080/v1/3d/iterate?amount=${amount}`, {
+        increment: async (dims: number, amount: number) => {
+            const response = await fetch(`http://localhost:8080/v1/${dims}d/iterate?amount=${amount}`, {
                 method: 'POST'
             });
 
             let body = await response.text();
             console.log("increment", { body })
-            universeStore.update();
+            universeStore.update(dims);
         }
     };
 }

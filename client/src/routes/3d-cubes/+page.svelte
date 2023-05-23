@@ -11,25 +11,14 @@
 	let delta_time = 10;
 
 	onMount(() => {
-		universeStore.update();
+		universeStore.update(3);
 	});
 </script>
 
-<Tabs
-	style="pill"
-	class="justify-center absolute w-full p-3 bg-white/90"
-	contentClass="hidden"
-	divider={false}
->
-	<TabItem title="1d" />
-	<TabItem title="2d" />
-	<TabItem open title="3d" />
-</Tabs>
-
-{#if $universeStore}
+{#if $universeStore.u3}
 	<div style="height:100%">
 		<Canvas>
-			<Scene universe={$universeStore} />
+			<Scene universe={$universeStore.u3} />
 		</Canvas>
 	</div>
 
@@ -40,7 +29,7 @@
 		</Card>
 		<Card>
 			<ButtonGroup>
-				<Button disabled>{$universeStore.iteration || 0}</Button>
+				<Button disabled>{$universeStore.u3.iteration || 0}</Button>
 				<Input
 					type="number"
 					name="delta_time"
@@ -48,7 +37,7 @@
 					bind:value={delta_time}
 					required
 				/>
-				<Button on:click={() => universeStore.increment(delta_time)}>Apply step</Button>
+				<Button on:click={() => universeStore.increment(3, delta_time)}>Apply step</Button>
 			</ButtonGroup>
 		</Card>
 	</div>
@@ -92,7 +81,7 @@
 			type="submit"
 			class="w-full1"
 			on:click={() => {
-				universeStore.setup(lattice_size, agent_count);
+				universeStore.setup(3, lattice_size, agent_count);
 				model_open = false;
 			}}
 		>
