@@ -4,7 +4,7 @@
 	import OneDCanvas from './OneD/Canvas.svelte';
 	import TwoDCanvas from './TwoD/Canvas.svelte';
 	import ThreeDCanvas from './OneD/Canvas.svelte';
-	import { universeStore } from '../3d-cubes/universeStore';
+	import { universeStore } from './universeStore';
 	import { onMount } from 'svelte';
 
 	export let data: PageData;
@@ -12,8 +12,18 @@
 	let dimensions = ['1d', '2d', '3d'];
 	let delta_time = 10;
 
+	$: hyperParameters = $universeStore[data.dimensionId]?.hyper_params;
+
 	let isSliding = false;
 	let sliceIndex = 0;
+
+	function setHyperParameters() {
+		if (!hyperParameters) return;
+
+		hyperParameters.beta = Number(hyperParameters.beta);
+		console.log('setHyperParameters', hyperParameters);
+		universeStore.set_parameters(data.dimensionInt, hyperParameters);
+	}
 
 	function resetSliding() {
 		isSliding = false;
@@ -56,9 +66,9 @@
 
 <div class="fixed bottom-8 right-4 flex flex-col gap-3">
 	<Card>
-		<h4>Quick setting</h4>
+		<h4 class="text-xl">Quick setting</h4>
 
-		<Label>Slide through X:{isSliding}</Label>
+		<Label defaultClass="mt-2">Slide through X:</Label>
 		<div
 			on:mousedown={() => (isSliding = true)}
 			on:touchstart={() => (isSliding = true)}
@@ -74,6 +84,30 @@
 		</div>
 		<p>Value: {sliceIndex}</p>
 
+		{#if hyperParameters}
+			<Label defaultClass="mt-2">Hyper parameters:</Label>
+			<Input type="number" bind:value={hyperParameters.beta} on:change={setHyperParameters} />
+			<p>Beta: {hyperParameters.beta}</p>
+
+			<Range
+				class="mt-2"
+				min="0"
+				max="1"
+				step="0.1"
+				bind:value={hyperParameters.gamma}
+				on:change={setHyperParameters}
+			/>
+			<p>Gamma: {hyperParameters.gamma}</p>
+			<Range
+				class="mt-2"
+				min="0"
+				max="1"
+				step="0.1"
+				bind:value={hyperParameters.lambda}
+				on:change={setHyperParameters}
+			/>
+			<p>Lambda: {hyperParameters.lambda}</p>
+		{/if}
 		<!-- <Button on:click={() => (model_open = true)}>Reset model</Button> -->
 	</Card>
 	<Card>

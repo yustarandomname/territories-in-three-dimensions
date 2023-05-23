@@ -1,7 +1,7 @@
 <script>
 	import { Canvas } from '@threlte/core';
 	import Scene from './Scene.svelte';
-	import { universeStore } from './universeStore';
+	import { universeStore } from '../[dimension]/universeStore';
 	import { Button, ButtonGroup, Card, Input, Label, Modal, TabItem, Tabs } from 'flowbite-svelte';
 	import { onMount } from 'svelte';
 
