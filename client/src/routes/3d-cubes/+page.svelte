@@ -1,8 +1,8 @@
 <script>
 	import { Canvas } from '@threlte/core';
-	import Scene from './Scene.svelte';
+	import Scene from '../[dimension]/ThreeD/Scene.svelte';
 	import { universeStore } from '../[dimension]/universeStore';
-	import { Button, ButtonGroup, Card, Input, Label, Modal, TabItem, Tabs } from 'flowbite-svelte';
+	import { Button, ButtonGroup, Card, Input, Label, Modal } from 'flowbite-svelte';
 	import { onMount } from 'svelte';
 
 	let model_open = true;

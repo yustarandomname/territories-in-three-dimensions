@@ -3,6 +3,8 @@
 	import { OrbitControls } from '@threlte/extras';
 
 	export let universe: Universe;
+	export let isSliding: boolean = false;
+	export let sliceIndex: number = 0;
 </script>
 
 <T.DirectionalLight position={[3, 10, 10]} castShadow />
@@ -17,20 +19,22 @@
 	{#each new Array(universe.size) as _, z}
 		{#each new Array(universe.size) as _, y}
 			{#each new Array(universe.size) as _, x}
-				{@const index = z * universe.size * universe.size + y * universe.size + (x % universe.size)}
-				{@const node = universe.nodes[index]}
+				{#if !(isSliding && sliceIndex != x)}
+					{@const index =
+						z * universe.size * universe.size + y * universe.size + (x % universe.size)}
+					{@const node = universe.nodes[index]}
+					{@const totalAgents = node.blue_agents + node.red_agents}
+					{@const blueRatio = node.blue_agents / totalAgents}
+					{@const redRatio = node.red_agents / totalAgents}
 
-				<T.Mesh position.x={x} position.y={y} position.z={z}>
-					<T.BoxGeometry />
+					<T.Mesh position.x={x} position.y={y} position.z={z}>
+						<T.BoxGeometry />
 
-					{#if node.blue_agents == node.red_agents}
-						<T.MeshBasicMaterial color="green" />
-					{:else if node.blue_agents > node.red_agents}
-						<T.MeshBasicMaterial color="blue" />
-					{:else}
-						<T.MeshBasicMaterial color="red" />
-					{/if}
-				</T.Mesh>
+						<T.MeshBasicMaterial
+							color="rgb({Math.round(redRatio * 255)},0,{Math.round(blueRatio * 255)})"
+						/>
+					</T.Mesh>
+				{/if}
 			{/each}
 		{/each}
 	{/each}

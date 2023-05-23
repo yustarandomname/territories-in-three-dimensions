@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { Button, ButtonGroup, Card, Input, Label, Tabs, Range } from 'flowbite-svelte';
+	import { Button, ButtonGroup, Card, Input, Label, Range, Tabs } from 'flowbite-svelte';
+	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
 	import OneDCanvas from './OneD/Canvas.svelte';
+	import Setup from './Setup.svelte';
+	import ThreeDCanvas from './ThreeD/Canvas.svelte';
 	import TwoDCanvas from './TwoD/Canvas.svelte';
-	import ThreeDCanvas from './OneD/Canvas.svelte';
 	import { universeStore } from './universeStore';
-	import { onMount } from 'svelte';
 
 	export let data: PageData;
 
@@ -16,6 +17,8 @@
 
 	let isSliding = false;
 	let sliceIndex = 0;
+
+	let modal_open = false;
 
 	function setHyperParameters() {
 		if (!hyperParameters) return;
@@ -61,8 +64,10 @@
 {:else if data.dimension == '3d' && $universeStore.u3}
 	<ThreeDCanvas universe={$universeStore.u3} {isSliding} {sliceIndex} />
 {:else}
-	<p>Unknown dimension: {data.dimension}</p>
+	<p>Loading...</p>
 {/if}
+
+<Setup dimension={data.dimension} dimensionInt={data.dimensionInt} bind:modal_open />
 
 <div class="fixed bottom-8 right-4 flex flex-col gap-3">
 	<Card>
@@ -108,7 +113,7 @@
 			/>
 			<p>Lambda: {hyperParameters.lambda}</p>
 		{/if}
-		<!-- <Button on:click={() => (model_open = true)}>Reset model</Button> -->
+		<Button class="mt-4" on:click={() => (modal_open = true)}>Reset model</Button>
 	</Card>
 	<Card>
 		<ButtonGroup>
