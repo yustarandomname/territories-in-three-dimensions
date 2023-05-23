@@ -23,9 +23,9 @@
 					{@const index =
 						z * universe.size * universe.size + y * universe.size + (x % universe.size)}
 					{@const node = universe.nodes[index]}
-					{@const totalAgents = node.blue_agents + node.red_agents}
-					{@const blueRatio = node.blue_agents / totalAgents}
-					{@const redRatio = node.red_agents / totalAgents}
+					{@const totalAgents = node.blue + node.red}
+					{@const blueRatio = node.blue / totalAgents}
+					{@const redRatio = node.red / totalAgents}
 
 					<T.Mesh position.x={x} position.y={y} position.z={z}>
 						<T.BoxGeometry />

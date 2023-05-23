@@ -1,4 +1,5 @@
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
+import { infoTypeStore } from './infoTypeStore';
 
 export interface Universes {
     u1?: Universe;
@@ -17,8 +18,9 @@ function createUniverseStore() {
         subscribe,
         update: async (dim: number) => {
             try {
+                let infoType = get(infoTypeStore);
 
-                const response = await fetch(`http://localhost:8080/v1/${dim}d/agent-nodes`, {
+                const response = await fetch(`http://localhost:8080/v1/${dim}d/${infoType}-nodes`, {
                     method: 'GET'
                 });
 
@@ -36,6 +38,7 @@ function createUniverseStore() {
                     return us;
                 })
             }
+            console.log("update universe store")
         },
         setup: async (dims: number, size: number, agents: number) => {
             const response = await fetch(`http://localhost:8080/v1/${dims}d/setup/${size}/${agents}`, { method: 'POST' });

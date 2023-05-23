@@ -7,6 +7,7 @@
 	import ThreeDCanvas from './ThreeD/Canvas.svelte';
 	import TwoDCanvas from './TwoD/Canvas.svelte';
 	import { universeStore } from './universeStore';
+	import { InfoType, infoTypeStore } from './infoTypeStore';
 
 	export let data: PageData;
 
@@ -33,10 +34,14 @@
 		sliceIndex = 0;
 	}
 
+	function toggleInfoType() {
+		infoTypeStore.update((type) => (type == InfoType.Agents ? InfoType.Graffiti : InfoType.Agents));
+		universeStore.update(data.dimensionInt);
+	}
+
 	onMount(() => {
-		universeStore.update(1);
-		universeStore.update(2);
-		universeStore.update(3);
+		console.log('update');
+		universeStore.update(data.dimensionInt);
 	});
 
 	type UniverseId = 'u1' | 'u2' | 'u3';
@@ -63,8 +68,8 @@
 	<TwoDCanvas universe={$universeStore.u2} {isSliding} {sliceIndex} />
 {:else if data.dimension == '3d' && $universeStore.u3}
 	<ThreeDCanvas universe={$universeStore.u3} {isSliding} {sliceIndex} />
-{:else}
-	<p>Loading...</p>
+{:else if !modal_open}
+	<Setup dimension={data.dimension} dimensionInt={data.dimensionInt} modal_open={true} />
 {/if}
 
 <Setup dimension={data.dimension} dimensionInt={data.dimensionInt} bind:modal_open />
@@ -113,20 +118,48 @@
 			/>
 			<p>Lambda: {hyperParameters.lambda}</p>
 		{/if}
-		<Button class="mt-4" on:click={() => (modal_open = true)}>Reset model</Button>
-	</Card>
-	<Card>
-		<ButtonGroup>
-			{@const dimension = data.dimension == '1d' ? 1 : data.dimension == '2d' ? 2 : 3}
-			<Button disabled>{$universeStore[universeId]?.iteration || 0}</Button>
-			<Input
-				type="number"
-				name="delta_time"
-				placeholder="Delta time"
-				bind:value={delta_time}
-				required
-			/>
-			<Button on:click={() => universeStore.increment(dimension, delta_time)}>Apply step</Button>
+
+		<ButtonGroup class="mt-4">
+			<Button
+				class="w-full"
+				color="red"
+				outline={$infoTypeStore != InfoType.Graffiti}
+				on:click={toggleInfoType}
+			>
+				Show graffiti
+			</Button>
+			<Button
+				class="w-full"
+				color="blue"
+				outline={$infoTypeStore != InfoType.Agents}
+				on:click={toggleInfoType}
+			>
+				Show agents
+			</Button>
 		</ButtonGroup>
+
+		<Button class="mt-4" on:click={() => (modal_open = true)}>
+			{$universeStore[universeId] ? 'Reset' : 'Setup'} model
+		</Button>
 	</Card>
+
+	{#if $universeStore[universeId]}
+		<Card>
+			<ButtonGroup>
+				<Button disabled>{$universeStore[universeId]?.iteration || 0}</Button>
+				<Input
+					type="number"
+					name="delta_time"
+					placeholder="Delta time"
+					bind:value={delta_time}
+					required
+					on:keydown={(e) =>
+						e.key == 'Enter' && universeStore.increment(data.dimensionInt, delta_time)}
+				/>
+				<Button on:click={() => universeStore.increment(data.dimensionInt, delta_time)}>
+					Increment Step
+				</Button>
+			</ButtonGroup>
+		</Card>
+	{/if}
 </div>

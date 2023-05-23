@@ -9,6 +9,7 @@ use super::{
         hyper_params::HyperParams,
         species::{AgentSpecies, SpeciesGraffiti, SpeciesPushStrength},
     },
+    SubNode,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -149,17 +150,38 @@ impl Node {
     }
 }
 
+// AGENT SUB NODE
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentNode {
-    pub blue_agents: u32,
-    pub red_agents: u32,
+    pub blue: u32,
+    pub red: u32,
 }
+
+impl SubNode for AgentNode {}
 
 impl From<Node> for AgentNode {
     fn from(agent: Node) -> Self {
         AgentNode {
-            blue_agents: agent.graffiti.blue as u32,
-            red_agents: agent.graffiti.red as u32,
+            blue: agent.blue_agents,
+            red: agent.red_agents,
+        }
+    }
+}
+
+// GRAFFITI SUB NODE
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GraffitiNode {
+    pub blue: f32,
+    pub red: f32,
+}
+
+impl SubNode for GraffitiNode {}
+
+impl From<Node> for GraffitiNode {
+    fn from(agent: Node) -> Self {
+        GraffitiNode {
+            blue: agent.graffiti.blue,
+            red: agent.graffiti.red,
         }
     }
 }

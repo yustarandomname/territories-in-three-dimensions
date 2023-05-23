@@ -1,6 +1,11 @@
 interface AgentNode {
-    blue_agents: number;
-    red_agents: number;
+    blue: number;
+    red: number;
+}
+
+interface GraffitiNode {
+    blue: number;
+    red: number;
 }
 
 interface HyperParams {
@@ -11,7 +16,7 @@ interface HyperParams {
 
 interface Universe {
     size: number;
-    nodes: AgentNode[];
+    nodes: (GraffitiNode | AgentNode)[];
     hyper_params: HyperParams;
     iteration: Number;
     total_size: Number;

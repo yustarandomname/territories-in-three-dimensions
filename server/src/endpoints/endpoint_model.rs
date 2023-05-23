@@ -1,10 +1,12 @@
 use std::sync::MutexGuard;
 
-use actix_web::{error, get, patch, post, web, HttpResponse, Responder, Result};
+use actix_web::{error, get, post, web, HttpResponse, Responder, Result};
 
 use crate::{
     endpoints::{HyperParamsQuery, IterateQuery, SetupSeedQuery},
-    model::{dimensions::Dims, hyper_params::HyperParams, AgentUniverse, Universe},
+    model::{
+        dimensions::Dims, hyper_params::HyperParams, AgentNode, GraffitiNode, SubUniverse, Universe,
+    },
     AppGlobalState,
 };
 
@@ -55,7 +57,19 @@ pub async fn get_state_agents(
     let dimensions = Dims::from(path.as_str());
 
     mutate_universe(data, &dimensions, move |universe| {
-        Ok(HttpResponse::Ok().json(AgentUniverse::from(universe.clone())))
+        Ok(HttpResponse::Ok().json(SubUniverse::<AgentNode>::from(universe.clone())))
+    })
+}
+
+#[get("/graffiti-nodes")]
+pub async fn get_state_graffiti(
+    data: web::Data<AppGlobalState>,
+    path: web::Path<String>,
+) -> Result<impl Responder> {
+    let dimensions = Dims::from(path.as_str());
+
+    mutate_universe(data, &dimensions, move |universe| {
+        Ok(HttpResponse::Ok().json(SubUniverse::<GraffitiNode>::from(universe.clone())))
     })
 }
 

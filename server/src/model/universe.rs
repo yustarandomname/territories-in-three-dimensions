@@ -98,24 +98,22 @@ impl Universe {
     }
 }
 
+pub trait SubNode: From<Node> {}
+
 #[derive(Serialize, Clone, Deserialize)]
-pub struct AgentUniverse {
+pub struct SubUniverse<T: SubNode> {
     pub size: u32,
-    pub nodes: Vec<AgentNode>,
+    pub nodes: Vec<T>,
     pub hyper_params: HyperParams,
     pub iteration: u32,
     pub total_size: u32,
 }
 
-impl From<Universe> for AgentUniverse {
+impl<T: SubNode> From<Universe> for SubUniverse<T> {
     fn from(universe: Universe) -> Self {
-        let nodes = universe
-            .nodes
-            .into_iter()
-            .map(|node| AgentNode::from(node))
-            .collect();
+        let nodes = universe.nodes.into_iter().map(|node| node.into()).collect();
 
-        AgentUniverse {
+        SubUniverse {
             size: universe.size,
             nodes,
             hyper_params: universe.hyper_params,

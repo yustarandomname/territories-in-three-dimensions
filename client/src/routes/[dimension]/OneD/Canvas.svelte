@@ -13,18 +13,18 @@
 		universe.nodes.forEach((node, i) => {
 			if (isSliding && sliceIndex != i && Math.abs(sliceIndex - i) != 1) return;
 
-			let totalNodes = node.blue_agents + node.red_agents;
+			let totalNodes = node.blue + node.red;
 			context.beginPath();
 
 			if (isSliding && Math.abs(sliceIndex - i) == 1) {
 				// opacity 0.5
-				context.fillStyle = `rgba(${Math.round(
-					255 * (node.red_agents / totalNodes)
-				)}, 0, ${Math.round(255 * (node.blue_agents / totalNodes))}, 0.5)`;
+				context.fillStyle = `rgba(${Math.round(255 * (node.red / totalNodes))}, 0, ${Math.round(
+					255 * (node.blue / totalNodes)
+				)}, 0.5)`;
 			} else {
-				context.fillStyle = `rgb(${Math.round(
-					255 * (node.red_agents / totalNodes)
-				)}, 0, ${Math.round(255 * (node.blue_agents / totalNodes))})`;
+				context.fillStyle = `rgb(${Math.round(255 * (node.red / totalNodes))}, 0, ${Math.round(
+					255 * (node.blue / totalNodes)
+				)})`;
 			}
 
 			context.fillRect(boxSize * i, 0, boxSize, height);
