@@ -3,7 +3,7 @@ mod model;
 
 use actix_cors::Cors;
 use actix_web::{
-    get,
+    get, middleware,
     web::{self, Data},
     App, HttpResponse, HttpServer, Responder, Result,
 };
@@ -56,6 +56,7 @@ async fn main() -> std::io::Result<()> {
             .allow_any_method();
 
         App::new()
+            .wrap(middleware::Compress::default())
             .wrap(cors)
             .app_data(universe_state.clone())
             .service(
