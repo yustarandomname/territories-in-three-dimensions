@@ -1,0 +1,30 @@
+---
+title: Function decorators
+tags: [vertex, fragment, compute]
+language: WGSL
+---
+
+## Vertex
+
+Makes a function into a vertex shader. Vertex shader runs once per vertex.
+
+```rust
+@vertex fn vertex_shader() {}
+```
+
+## Fragment
+
+Makes a function into a fragment shader. Fragment shader runs once per pixel.
+
+```rust
+@fragment fn fragment_shader {}
+```
+
+## Compute
+
+Makes a function into a compute shader. Compute shader runs once per workgroup. 
+Each workgroup is a group of threads that can share memory. 
+
+```rust
+@compute @workgroup_size(1) fn compute_shader {}
+```
