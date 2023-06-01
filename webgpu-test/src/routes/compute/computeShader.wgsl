@@ -29,3 +29,12 @@ struct Node {
     data[i].red_strength = pow(e, (beta * data[i].red_graffiti));
     data[i].blue_strength = pow(e, (beta * data[i].blue_graffiti));
 }
+
+@compute @workgroup_size(10) fn move_agents(
+    @builtin(global_invocation_id) id: vec3<u32>
+) {
+    let i = id.x;
+    
+    data[i].red_agents = data[i].red_agents + 90000.0;
+    data[i].red_graffiti = data[i].red_graffiti + 90000.0;
+}
