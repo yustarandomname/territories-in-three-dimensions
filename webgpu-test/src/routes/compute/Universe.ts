@@ -31,9 +31,10 @@ export class Universe {
 
     constructor(public size: number, agent_size: number) {
         let prng = seedrandom('hello universe');
+        let total_size = size * size;
 
         // Create nodes
-        for (let i = 0; i < size; i++) {
+        for (let i = 0; i < total_size; i++) {
             let node = new Node(0, 0, 0, 0, 0, 0);
             this.nodes.push(node);
         }
@@ -52,8 +53,8 @@ export class Universe {
     }
 
     to_f32_buffer(): Float32Array {
-        let buffer = new Float32Array(this.size * 6);
-        for (let i = 0; i < this.size; i++) {
+        let buffer = new Float32Array(this.nodes.length * 6);
+        for (let i = 0; i < this.nodes.length; i++) {
             let node = this.nodes[i];
             buffer[i * 6 + 0] = node.red_agents;
             buffer[i * 6 + 1] = node.blue_agents;
@@ -67,18 +68,16 @@ export class Universe {
 
     clone(): Universe {
         let universe = new Universe(this.size, 0);
-        for (let i = 0; i < this.size; i++) {
-            let node = this.nodes[i];
-            universe.nodes[i] = node.clone();
-        }
+
+        universe.nodes = this.nodes.map(n => n.clone())
+
         return universe;
     }
 
     static from_result(result: Float32Array, size: number): Universe {
         let universe = new Universe(size, 0);
 
-
-        for (let i = 0; i < size; i++) {
+        for (let i = 0; i < universe.nodes.length; i++) {
             let node = universe.nodes[i];
             node.red_agents = result[i * 6 + 0];
             node.blue_agents = result[i * 6 + 1];
