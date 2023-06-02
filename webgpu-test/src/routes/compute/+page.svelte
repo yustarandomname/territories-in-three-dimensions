@@ -62,8 +62,26 @@
 				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
 			})
 		];
+
 		// Copy our input data to that the first buffer
 		device.queue.writeBuffer(cellStateStorage[0], 0, input);
+
+		const agentsOutArray = new Float32Array(input.length * 4);
+		// Create a buffer for storing the amount of agents moving out
+		const agentsOutBuffers = [
+			device.createBuffer({
+				label: 'Agents Out red',
+				size: agentsOutArray.byteLength,
+				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST //TODO: remove COPY src
+			}),
+			device.createBuffer({
+				label: 'Agents Out blue',
+				size: agentsOutArray.byteLength,
+				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST //TODO: remove COPY src
+			})
+		];
+		device.queue.writeBuffer(agentsOutBuffers[0], 0, agentsOutArray);
+		device.queue.writeBuffer(agentsOutBuffers[1], 0, new Float32Array(input.length * 4));
 
 		// create a buffer on the GPU to get a copy of the results
 		const resultBuffer = device.createBuffer({
@@ -89,6 +107,16 @@
 				},
 				{
 					binding: 2,
+					visibility: GPUShaderStage.COMPUTE,
+					buffer: { type: 'storage' } // Cell state output buffer
+				},
+				{
+					binding: 3,
+					visibility: GPUShaderStage.COMPUTE,
+					buffer: { type: 'storage' } // Cell state output buffer
+				},
+				{
+					binding: 4,
 					visibility: GPUShaderStage.COMPUTE,
 					buffer: { type: 'storage' } // Cell state output buffer
 				}
@@ -127,6 +155,14 @@
 					{
 						binding: 2,
 						resource: { buffer: cellStateStorage[1] }
+					},
+					{
+						binding: 3,
+						resource: { buffer: agentsOutBuffers[0] }
+					},
+					{
+						binding: 4,
+						resource: { buffer: agentsOutBuffers[1] }
 					}
 				] // TODO: make this ping pong buffers
 			});
@@ -139,13 +175,13 @@
 			pass.end();
 		}
 
-		function move_agents(device: GPUDevice) {
+		function move_agents_out(device: GPUDevice) {
 			const moveAgentsOutPipeline = device.createComputePipeline({
 				label: 'moving agents compute pipeline',
 				layout: pipelineLayout,
 				compute: {
 					module,
-					entryPoint: 'move_agents'
+					entryPoint: 'move_agents_out'
 				}
 			});
 
@@ -166,6 +202,14 @@
 					{
 						binding: 2,
 						resource: { buffer: cellStateStorage[1] }
+					},
+					{
+						binding: 3,
+						resource: { buffer: agentsOutBuffers[0] }
+					},
+					{
+						binding: 4,
+						resource: { buffer: agentsOutBuffers[1] }
 					}
 				] // TODO: make this ping pong buffers
 			});
@@ -178,8 +222,56 @@
 			pass.end();
 		}
 
+		function move_agents_in(device: GPUDevice) {
+			const moveAgentsInPipeline = device.createComputePipeline({
+				label: 'moving agents in compute pipeline',
+				layout: pipelineLayout,
+				compute: {
+					module,
+					entryPoint: 'move_agents_in'
+				}
+			});
+
+			// Setup a bindGroup to tell the shader which
+			// buffer to use for the computation
+			const bindGroupMoveAgentsIn = device.createBindGroup({
+				label: 'bindGroup for moving agents in buffer',
+				layout: bindGroupLayout,
+				entries: [
+					{
+						binding: 0,
+						resource: { buffer: uniformBuffer }
+					},
+					{
+						binding: 1,
+						resource: { buffer: cellStateStorage[0] }
+					},
+					{
+						binding: 2,
+						resource: { buffer: cellStateStorage[1] }
+					},
+					{
+						binding: 3,
+						resource: { buffer: agentsOutBuffers[0] }
+					},
+					{
+						binding: 4,
+						resource: { buffer: agentsOutBuffers[1] }
+					}
+				] // TODO: make this ping pong buffers
+			});
+
+			// TODO: move to separate process: iterative process
+			const pass = encoder.beginComputePass();
+			pass.setPipeline(moveAgentsInPipeline);
+			pass.setBindGroup(0, bindGroupMoveAgentsIn);
+			pass.dispatchWorkgroups((HYPERPARAMS.size * HYPERPARAMS.size) / 10, 1, 1); // TODO: math.ceil
+			pass.end();
+		}
+
 		updateGraffitiAndPushStength(device);
-		move_agents(device);
+		move_agents_out(device);
+		move_agents_in(device);
 
 		// Encode a command to copy the results to a mappable buffer.
 		encoder.copyBufferToBuffer(cellStateStorage[1], 0, resultBuffer, 0, resultBuffer.size);
@@ -215,6 +307,10 @@
 
 	<p>
 		total red agents: {outputUniverse.nodes.reduce((acc, node) => acc + node.red_agents, 0)}
+	</p>
+
+	<p>
+		total blue agents: {outputUniverse.nodes.reduce((acc, node) => acc + node.blue_agents, 0)}
 	</p>
 {/if}
 
