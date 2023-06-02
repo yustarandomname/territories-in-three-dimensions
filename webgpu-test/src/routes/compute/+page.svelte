@@ -2,9 +2,14 @@
 	import { onMount } from 'svelte';
 	import computeShader from './computeShader.wgsl?raw';
 	import { Universe } from './Universe';
+	import { get, writable } from 'svelte/store';
 
 	let inputUniverse = new Universe(100, 10000);
 	let outputUniverse: Universe;
+	let probe: boolean = true;
+	let isPlaying = writable<boolean>(false);
+
+	let iterateFunction: (() => Promise<void>) | undefined;
 
 	const HYPERPARAMS = {
 		lambda: 0.5,
@@ -61,7 +66,7 @@
 				size: input.byteLength,
 				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
 			})
-		];
+		] as const;
 
 		// Copy our input data to that the first buffer
 		device.queue.writeBuffer(cellStateStorage[0], 0, input);
@@ -89,8 +94,6 @@
 			size: input.byteLength,
 			usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
 		});
-
-		const encoder = device.createCommandEncoder();
 
 		const bindGroupLayout = device.createBindGroupLayout({
 			label: 'Cell Bind Group Layout',
@@ -123,173 +126,177 @@
 			]
 		});
 
-		const pipelineLayout = device.createPipelineLayout({
-			label: 'Cell Pipeline Layout',
-			bindGroupLayouts: [bindGroupLayout]
-		});
+		function createPipeline(entryPoint: string, device: GPUDevice) {
+			const pipelineLayout = device.createPipelineLayout({
+				label: 'Cell Pipeline Layout',
+				bindGroupLayouts: [bindGroupLayout]
+			});
 
-		function updateGraffitiAndPushStength(device: GPUDevice) {
-			const updateGraffitiPipeline = device.createComputePipeline({
-				label: 'update graffiti and push strength pipeline',
+			const computePipeline = device.createComputePipeline({
+				label: `${entryPoint} pipeline`,
 				layout: pipelineLayout,
 				compute: {
 					module,
-					entryPoint: 'update_graffiti_and_push_strength'
+					entryPoint
 				}
 			});
 
-			// Setup a bindGroup to tell the shader which
-			// buffer to use for the computation
-			const updateGraffitiBindGroup = device.createBindGroup({
-				label: 'bindGroup for updating graffiti buffer',
-				layout: bindGroupLayout,
-				entries: [
-					{
-						binding: 0,
-						resource: { buffer: uniformBuffer }
-					},
-					{
-						binding: 1,
-						resource: { buffer: cellStateStorage[0] }
-					},
-					{
-						binding: 2,
-						resource: { buffer: cellStateStorage[1] }
-					},
-					{
-						binding: 3,
-						resource: { buffer: agentsOutBuffers[0] }
-					},
-					{
-						binding: 4,
-						resource: { buffer: agentsOutBuffers[1] }
-					}
-				] // TODO: make this ping pong buffers
-			});
+			// Setup a bindGroup to tell the shader which buffer to use for the computation
+			// For each iterations we need to swap the input and output buffers
+			const bindGroups = [
+				device.createBindGroup({
+					label: `BindGroup for ${entryPoint}, iteration ${HYPERPARAMS.iterations}, group A`,
+					layout: bindGroupLayout,
+					entries: [
+						{
+							binding: 0,
+							resource: { buffer: uniformBuffer }
+						},
+						{
+							binding: 1,
+							resource: { buffer: cellStateStorage[0] } // Cell state A buffer
+						},
+						{
+							binding: 2,
+							resource: { buffer: cellStateStorage[1] } // Cell state B buffer
+						},
+						{
+							binding: 3,
+							resource: { buffer: agentsOutBuffers[0] }
+						},
+						{
+							binding: 4,
+							resource: { buffer: agentsOutBuffers[1] }
+						}
+					]
+				}),
+				device.createBindGroup({
+					label: `BindGroup for ${entryPoint}, iteration ${HYPERPARAMS.iterations}, group A`,
+					layout: bindGroupLayout,
+					entries: [
+						{
+							binding: 0,
+							resource: { buffer: uniformBuffer }
+						},
+						{
+							binding: 1,
+							resource: { buffer: cellStateStorage[1] } // Cell state B buffer
+						},
+						{
+							binding: 2,
+							resource: { buffer: cellStateStorage[0] } // Cell state A buffer
+						},
+						{
+							binding: 3,
+							resource: { buffer: agentsOutBuffers[0] }
+						},
+						{
+							binding: 4,
+							resource: { buffer: agentsOutBuffers[1] }
+						}
+					]
+				})
+			];
 
-			// TODO: move to separate process: iterative process
-			const pass = encoder.beginComputePass();
-			pass.setPipeline(updateGraffitiPipeline);
-			pass.setBindGroup(0, updateGraffitiBindGroup);
-			pass.dispatchWorkgroups((HYPERPARAMS.size * HYPERPARAMS.size) / 10, 1, 1); // TODO: math.ceil
-			pass.end();
+			return { computePipeline, bindGroups };
 		}
 
-		function move_agents_out(device: GPUDevice) {
-			const moveAgentsOutPipeline = device.createComputePipeline({
-				label: 'moving agents compute pipeline',
-				layout: pipelineLayout,
-				compute: {
-					module,
-					entryPoint: 'move_agents_out'
-				}
-			});
+		// Setup the pipeline for the update cell graffiti step
+		const { computePipeline: updateGraffitiPipeline, bindGroups: updateBindGroups } =
+			createPipeline('update_graffiti_and_push_strength', device);
 
-			// Setup a bindGroup to tell the shader which
-			// buffer to use for the computation
-			const bindGroupMoveAgents = device.createBindGroup({
-				label: 'bindGroup for moveing agents buffer',
-				layout: bindGroupLayout,
-				entries: [
-					{
-						binding: 0,
-						resource: { buffer: uniformBuffer }
-					},
-					{
-						binding: 1,
-						resource: { buffer: cellStateStorage[0] }
-					},
-					{
-						binding: 2,
-						resource: { buffer: cellStateStorage[1] }
-					},
-					{
-						binding: 3,
-						resource: { buffer: agentsOutBuffers[0] }
-					},
-					{
-						binding: 4,
-						resource: { buffer: agentsOutBuffers[1] }
-					}
-				] // TODO: make this ping pong buffers
-			});
+		const { computePipeline: moveAgentsOutPipeline, bindGroups: moveOutBindGroups } =
+			createPipeline('move_agents_out', device);
 
-			// TODO: move to separate process: iterative process
-			const pass = encoder.beginComputePass();
-			pass.setPipeline(moveAgentsOutPipeline);
-			pass.setBindGroup(0, bindGroupMoveAgents);
-			pass.dispatchWorkgroups((HYPERPARAMS.size * HYPERPARAMS.size) / 10, 1, 1); // TODO: math.ceil
-			pass.end();
+		const { computePipeline: moveAgentsInPipeline, bindGroups: moveInBindGroups } = createPipeline(
+			'move_agents_in',
+			device
+		);
+
+		async function iterate() {
+			if (!device) return;
+
+			const encoder = device.createCommandEncoder();
+
+			{
+				// Update graffiti and push strength
+				const pass = encoder.beginComputePass();
+				pass.setPipeline(updateGraffitiPipeline);
+				pass.setBindGroup(0, updateBindGroups[HYPERPARAMS.iterations % 2]);
+				pass.dispatchWorkgroups((HYPERPARAMS.size * HYPERPARAMS.size) / 10, 1, 1); // TODO: math.ceil
+				pass.end();
+			}
+			{
+				// Move agents out
+				const pass = encoder.beginComputePass();
+				pass.setPipeline(moveAgentsOutPipeline);
+				pass.setBindGroup(0, moveOutBindGroups[HYPERPARAMS.iterations % 2]);
+				pass.dispatchWorkgroups((HYPERPARAMS.size * HYPERPARAMS.size) / 10, 1, 1); // TODO: math.ceil
+				pass.end();
+			}
+			{
+				// Move agents in
+				const pass = encoder.beginComputePass();
+				pass.setPipeline(moveAgentsInPipeline);
+				pass.setBindGroup(0, moveInBindGroups[HYPERPARAMS.iterations % 2]);
+				pass.dispatchWorkgroups((HYPERPARAMS.size * HYPERPARAMS.size) / 10, 1, 1); // TODO: math.ceil
+				pass.end();
+			}
+
+			// Only show output if we are probing
+			if (probe) {
+				// Encode a command to copy the results to a mappable buffer.
+				encoder.copyBufferToBuffer(
+					cellStateStorage[(HYPERPARAMS.iterations + 1) % 2],
+					0,
+					resultBuffer,
+					0,
+					resultBuffer.size
+				);
+			}
+
+			HYPERPARAMS.iterations++;
+
+			// Finish encoding and submit the commands
+			device.queue.submit([encoder.finish()]);
+
+			if (probe) {
+				// Read results
+				await resultBuffer.mapAsync(GPUMapMode.READ);
+				const result = new Float32Array(resultBuffer.getMappedRange().slice(0));
+				resultBuffer.unmap();
+
+				// Output the results
+				outputUniverse = Universe.from_result(result, HYPERPARAMS.size);
+				console.log(outputUniverse);
+				probe = false;
+			}
+
+			// Only update if the animation is allowed to run
+			console.log({ isPlaying: get(isPlaying) });
+			if (isPlaying && HYPERPARAMS.iterations < 1000) {
+				// Run max of 144 iterations per second
+				requestAnimationFrame(() => iterate());
+			}
 		}
 
-		function move_agents_in(device: GPUDevice) {
-			const moveAgentsInPipeline = device.createComputePipeline({
-				label: 'moving agents in compute pipeline',
-				layout: pipelineLayout,
-				compute: {
-					module,
-					entryPoint: 'move_agents_in'
-				}
-			});
+		iterate();
 
-			// Setup a bindGroup to tell the shader which
-			// buffer to use for the computation
-			const bindGroupMoveAgentsIn = device.createBindGroup({
-				label: 'bindGroup for moving agents in buffer',
-				layout: bindGroupLayout,
-				entries: [
-					{
-						binding: 0,
-						resource: { buffer: uniformBuffer }
-					},
-					{
-						binding: 1,
-						resource: { buffer: cellStateStorage[0] }
-					},
-					{
-						binding: 2,
-						resource: { buffer: cellStateStorage[1] }
-					},
-					{
-						binding: 3,
-						resource: { buffer: agentsOutBuffers[0] }
-					},
-					{
-						binding: 4,
-						resource: { buffer: agentsOutBuffers[1] }
-					}
-				] // TODO: make this ping pong buffers
-			});
-
-			// TODO: move to separate process: iterative process
-			const pass = encoder.beginComputePass();
-			pass.setPipeline(moveAgentsInPipeline);
-			pass.setBindGroup(0, bindGroupMoveAgentsIn);
-			pass.dispatchWorkgroups((HYPERPARAMS.size * HYPERPARAMS.size) / 10, 1, 1); // TODO: math.ceil
-			pass.end();
-		}
-
-		updateGraffitiAndPushStength(device);
-		move_agents_out(device);
-		move_agents_in(device);
-
-		// Encode a command to copy the results to a mappable buffer.
-		encoder.copyBufferToBuffer(cellStateStorage[1], 0, resultBuffer, 0, resultBuffer.size);
-
-		// Finish encoding and submit the commands
-		device.queue.submit([encoder.finish()]);
-
-		// Read the results
-		await resultBuffer.mapAsync(GPUMapMode.READ);
-		const result = new Float32Array(resultBuffer.getMappedRange().slice(0));
-		resultBuffer.unmap();
-
-		// Output the results
-		outputUniverse = Universe.from_result(result, HYPERPARAMS.size);
+		return iterate;
 	}
 
-	onMount(() => {
-		main();
+	function togglePlay() {
+		console.log('togglePlay');
+		if ($isPlaying && iterateFunction) {
+			iterateFunction();
+			return isPlaying.set(true);
+		}
+
+		return isPlaying.set(false);
+	}
+
+	onMount(async () => {
+		iterateFunction = await main();
 	});
 </script>
 
@@ -298,12 +305,12 @@
 
 <button on:click={iterate}>iterate + 1</button>
 
-<h1>Results</h1>
+<h1>Results | iterations: {HYPERPARAMS.iterations}</h1>
 {#if outputUniverse}
-	<p>
-		avg: {outputUniverse.nodes.reduce((acc, node) => acc + node.red_agents, 0) /
-			outputUniverse.nodes.length}
-	</p>
+	<button on:click={() => (probe = true)}>Probe output</button>
+	<button on:click={togglePlay}>
+		Toggle play | {$isPlaying ? 'now playing' : 'paused'}
+	</button>
 
 	<p>
 		total red agents: {outputUniverse.nodes.reduce((acc, node) => acc + node.red_agents, 0)}
