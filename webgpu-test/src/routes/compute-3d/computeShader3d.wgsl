@@ -143,7 +143,7 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
 
         for (var bi: u32 = 0; bi < 6; bi++) {
             blue_strength_sum += state_out[neighbour_index[bi]].blue_strength;
-            if (random_result < blue_strength_sum) {
+            if (random_result <= blue_strength_sum) {
                 cell_red_agents_out[bi] += 1;
                 break;
             }
@@ -158,7 +158,7 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
 
         for (var ri: u32 = 0; ri < 6; ri++) {
             red_strength_sum += state_out[neighbour_index[ri]].red_strength;
-            if (random_result < red_strength_sum) {
+            if (random_result <= red_strength_sum) {
                 cell_blue_agents_out[ri] += 1;
                 break;
             }

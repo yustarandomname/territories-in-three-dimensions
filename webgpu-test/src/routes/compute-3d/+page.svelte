@@ -11,13 +11,15 @@
 	let probe: boolean = true;
 	let isPlaying = writable<boolean>(false);
 	let playInterval: number | undefined;
+	let do_iterations = 1000;
+	let sliceIndex = 0;
 
 	let iterateFunction: (() => Promise<void>) | undefined;
 
 	const HYPERPARAMS = {
 		lambda: 0.5,
 		gamma: 0.5,
-		beta: 1e-2,
+		beta: 5e-3,
 		size: inputUniverse.size,
 		iterations: 0
 	};
@@ -292,11 +294,14 @@
 		return isPlaying.set(false);
 	}
 
-	onMount(async () => {
+	async function reset() {
+		HYPERPARAMS.iterations = 0;
+		probe = true;
 		iterateFunction = await main();
 		iterateFunction?.();
-		// draw();
-	});
+	}
+
+	onMount(reset);
 </script>
 
 <h1>Input</h1>
@@ -306,18 +311,33 @@
 
 <h1>Results | iterations: {HYPERPARAMS.iterations}</h1>
 {#if iterateFunction}
+	<p>
+		Lambda: {HYPERPARAMS.lambda} | Gamma: {HYPERPARAMS.gamma}
+		<label>
+			| Beta:
+			<input on:change={reset} bind:value={HYPERPARAMS.beta} />
+		</label>
+	</p>
+
 	<button
 		on:click={() => {
+			console.time(`Time to probe`);
 			probe = true;
 			iterateFunction?.();
+			console.timeEnd(`Time to probe`);
 		}}
 		>Probe output
 	</button>
+
+	<input bind:value={do_iterations} />
 	<button
 		on:click={() => {
-			let do_iterations = 1000;
 			console.time(`Time to iterate: ${do_iterations}`);
 			for (let i = 0; i < do_iterations; i++) {
+				if (i == do_iterations - 1) {
+					probe = true;
+				}
+
 				iterateFunction?.();
 			}
 			console.timeEnd(`Time to iterate: ${do_iterations}`);
@@ -327,12 +347,14 @@
 	<button on:click={togglePlay}>
 		Toggle play | {$isPlaying ? 'now playing' : 'paused'}
 	</button>
+
+	<button on:click={reset}>Reset</button>
 {/if}
 
 {#if outputUniverse}
-	<p>
-		total red agents: {outputUniverse.nodes.reduce((acc, node) => acc + node.red_agents, 0)}
-	</p>
-
-	<Canvas universe={outputUniverse} />
+	<label>
+		Slice at {sliceIndex}
+		<input type="range" min="0" max={HYPERPARAMS.size - 2} bind:value={sliceIndex} />
+	</label>
+	<Canvas universe={outputUniverse} offset={sliceIndex * (HYPERPARAMS.size * HYPERPARAMS.size)} />
 {/if}

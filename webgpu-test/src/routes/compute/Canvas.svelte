@@ -5,6 +5,7 @@
 	export let universe: Universe;
 	export let isSliding: boolean = false;
 	export let sliceIndex: number = 0;
+	export let offset: number = 0;
 
 	function range(from: number, to: number, step: number = 1) {
 		return Array.from({ length: to - from }, (_, i) => from + i * step);
@@ -17,7 +18,7 @@
 
 		for (const y of range(0, universe.size)) {
 			for (const x of range(0, universe.size)) {
-				let index = x + y * universe.size;
+				let index = x + y * universe.size + offset;
 				let node = universe.nodes[index];
 				let totalNodes = node.blue_agents + node.red_agents;
 				if (isSliding && sliceIndex != x) continue;
