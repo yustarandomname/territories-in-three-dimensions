@@ -28,26 +28,27 @@ export class Node {
 
 export class Universe {
     nodes: Node[] = [];
+    total_size: number;
 
-    constructor(public size: number, agent_size: number) {
+    constructor(public size: number, agent_size: number, public dimensions: number) {
         let prng = seedrandom('hello universe');
-        let total_size = size * size;
+        this.total_size = Math.pow(size, dimensions);
 
         // Create nodes
-        for (let i = 0; i < total_size; i++) {
+        for (let i = 0; i < this.total_size; i++) {
             let node = new Node(0, 0, 0, 0, 0, 0);
             this.nodes.push(node);
         }
 
         // Add red agents to random nodes
         for (let ar = 0; ar < agent_size; ar++) {
-            let node = random(prng, 0, size * size);
+            let node = random(prng, 0, this.total_size);
             this.nodes[node].red_agents++;
         }
 
         // Add blue agents to random nodes
         for (let ab = 0; ab < agent_size; ab++) {
-            let node = random(prng, 0, size * size);
+            let node = random(prng, 0, this.total_size);
             this.nodes[node].blue_agents++;
         }
     }
@@ -63,20 +64,20 @@ export class Universe {
             buffer[i * 6 + 4] = node.red_strength;
             buffer[i * 6 + 5] = node.blue_strength;
         }
-        console.log(buffer);
+        // console.log(buffer);
         return buffer;
     }
 
     clone(): Universe {
-        let universe = new Universe(this.size, 0);
+        let universe = new Universe(this.size, 0, this.dimensions);
 
         universe.nodes = this.nodes.map(n => n.clone())
 
         return universe;
     }
 
-    static from_result(result: Float32Array, size: number): Universe {
-        let universe = new Universe(size, 0);
+    static from_result(result: Float32Array, size: number, dimensions: number): Universe {
+        let universe = new Universe(size, 0, dimensions);
 
         for (let i = 0; i < universe.nodes.length; i++) {
             let node = universe.nodes[i];

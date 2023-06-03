@@ -2,10 +2,11 @@
 	import { onMount } from 'svelte';
 	import { writable } from 'svelte/store';
 	import { Universe } from '../Universe';
-	import computeShader from './computeShader.wgsl?raw';
-	import Canvas from './Canvas.svelte';
+	import computeShader from './computeShader3d.wgsl?raw';
+	import Canvas from '../compute/Canvas.svelte';
+	// import Canvas from './Canvas.svelte';
 
-	let inputUniverse = new Universe(100, 100000, 2);
+	let inputUniverse = new Universe(50, 10000000, 3);
 	let outputUniverse: Universe;
 	let probe: boolean = true;
 	let isPlaying = writable<boolean>(false);
@@ -16,7 +17,7 @@
 	const HYPERPARAMS = {
 		lambda: 0.5,
 		gamma: 0.5,
-		beta: 0.1,
+		beta: 1e-2,
 		size: inputUniverse.size,
 		iterations: 0
 	};
@@ -73,7 +74,7 @@
 		// Copy our input data to that the first buffer
 		device.queue.writeBuffer(cellStateStorage[0], 0, input);
 
-		const agentsOutArray = new Float32Array(input.length * 4);
+		const agentsOutArray = new Float32Array(input.length * 6);
 		// Create a buffer for storing the amount of agents moving out
 		const agentsOutBuffers = [
 			device.createBuffer({
@@ -88,7 +89,7 @@
 			})
 		];
 		device.queue.writeBuffer(agentsOutBuffers[0], 0, agentsOutArray);
-		device.queue.writeBuffer(agentsOutBuffers[1], 0, new Float32Array(input.length * 4));
+		device.queue.writeBuffer(agentsOutBuffers[1], 0, new Float32Array(input.length * 6));
 
 		// create a buffer on the GPU to get a copy of the results
 		const resultBuffer = device.createBuffer({
@@ -220,12 +221,14 @@
 
 			const encoder = device.createCommandEncoder();
 
+			const dispatchWorkgroups = Math.ceil(Math.pow(HYPERPARAMS.size, 3) / 10);
+
 			{
 				// Update graffiti and push strength
 				const pass = encoder.beginComputePass();
 				pass.setPipeline(updateGraffitiPipeline);
 				pass.setBindGroup(0, updateBindGroups[HYPERPARAMS.iterations % 2]);
-				pass.dispatchWorkgroups((HYPERPARAMS.size * HYPERPARAMS.size) / 10, 1, 1); // TODO: math.ceil
+				pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1); // TODO: math.ceil
 				pass.end();
 			}
 			{
@@ -233,7 +236,7 @@
 				const pass = encoder.beginComputePass();
 				pass.setPipeline(moveAgentsOutPipeline);
 				pass.setBindGroup(0, moveOutBindGroups[HYPERPARAMS.iterations % 2]);
-				pass.dispatchWorkgroups((HYPERPARAMS.size * HYPERPARAMS.size) / 10, 1, 1); // TODO: math.ceil
+				pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1); // TODO: math.ceil
 				pass.end();
 			}
 			{
@@ -241,7 +244,7 @@
 				const pass = encoder.beginComputePass();
 				pass.setPipeline(moveAgentsInPipeline);
 				pass.setBindGroup(0, moveInBindGroups[HYPERPARAMS.iterations % 2]);
-				pass.dispatchWorkgroups((HYPERPARAMS.size * HYPERPARAMS.size) / 10, 1, 1); // TODO: math.ceil
+				pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1); // TODO: math.ceil
 				pass.end();
 			}
 
@@ -269,18 +272,13 @@
 				resultBuffer.unmap();
 
 				// Output the results
-				outputUniverse = Universe.from_result(result, HYPERPARAMS.size, 2);
-				console.log(outputUniverse);
+				outputUniverse = Universe.from_result(result, HYPERPARAMS.size, 3);
+				console.log('output', outputUniverse.nodes.slice(0, 10));
 				probe = false;
 			}
 		}
 
 		return iterate;
-	}
-
-	function draw() {
-		iterateFunction?.();
-		requestAnimationFrame(draw);
 	}
 
 	function togglePlay() {
@@ -296,13 +294,13 @@
 
 	onMount(async () => {
 		iterateFunction = await main();
-		// iterateFunction?.();
-		draw();
+		iterateFunction?.();
+		// draw();
 	});
 </script>
 
 <h1>Input</h1>
-<pre>{JSON.stringify(inputUniverse)}</pre>
+<!-- <pre>{JSON.stringify(inputUniverse)}</pre> -->
 
 <button on:click={iterate}>iterate + 1</button>
 
@@ -312,8 +310,20 @@
 		on:click={() => {
 			probe = true;
 			iterateFunction?.();
-		}}>Probe output</button
-	>
+		}}
+		>Probe output
+	</button>
+	<button
+		on:click={() => {
+			let do_iterations = 1000;
+			console.time(`Time to iterate: ${do_iterations}`);
+			for (let i = 0; i < do_iterations; i++) {
+				iterateFunction?.();
+			}
+			console.timeEnd(`Time to iterate: ${do_iterations}`);
+		}}
+		>Step
+	</button>
 	<button on:click={togglePlay}>
 		Toggle play | {$isPlaying ? 'now playing' : 'paused'}
 	</button>
@@ -322,10 +332,6 @@
 {#if outputUniverse}
 	<p>
 		total red agents: {outputUniverse.nodes.reduce((acc, node) => acc + node.red_agents, 0)}
-	</p>
-
-	<p>
-		total blue agents: {outputUniverse.nodes.reduce((acc, node) => acc + node.blue_agents, 0)}
 	</p>
 
 	<Canvas universe={outputUniverse} />
