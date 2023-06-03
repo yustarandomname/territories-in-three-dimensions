@@ -41,13 +41,13 @@ export class Universe {
 
         // Add red agents to random nodes
         for (let ar = 0; ar < agent_size; ar++) {
-            let node = random(prng, 0, size);
+            let node = random(prng, 0, size * size);
             this.nodes[node].red_agents++;
         }
 
         // Add blue agents to random nodes
         for (let ab = 0; ab < agent_size; ab++) {
-            let node = random(prng, 0, size);
+            let node = random(prng, 0, size * size);
             this.nodes[node].blue_agents++;
         }
     }
@@ -63,6 +63,7 @@ export class Universe {
             buffer[i * 6 + 4] = node.red_strength;
             buffer[i * 6 + 5] = node.blue_strength;
         }
+        console.log(buffer);
         return buffer;
     }
 

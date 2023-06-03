@@ -31,6 +31,7 @@
 	"dependencies": {
 		"@types/seedrandom": "^3.0.5",
 		"@webgpu/types": "^0.1.32",
-		"seedrandom": "^3.0.5"
+		"seedrandom": "^3.0.5",
+		"svelte-canvas": "^0.9.3"
 	}
 }

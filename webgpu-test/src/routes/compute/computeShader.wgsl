@@ -77,6 +77,8 @@ fn get_neightbour_index(i: u32) -> array<u32, 4> {
     let red_graffiti = state_in[i].red_graffiti * (1.0 - lambda) + f32(state_in[i].red_agents) * gamma;
     let blue_graffiti = state_in[i].blue_graffiti * (1.0 - lambda) + f32(state_in[i].blue_agents) * gamma;
 
+    state_out[i].red_agents = 0;
+    state_out[i].blue_agents = 0;
     state_out[i].red_graffiti = red_graffiti;
     state_out[i].blue_graffiti = blue_graffiti;
     state_out[i].red_strength = pow(e, (-beta * red_graffiti));

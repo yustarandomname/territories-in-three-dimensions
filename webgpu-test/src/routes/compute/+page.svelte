@@ -1,13 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import computeShader from './computeShader.wgsl?raw';
+	import { writable } from 'svelte/store';
 	import { Universe } from './Universe';
-	import { get, writable } from 'svelte/store';
+	import computeShader from './computeShader.wgsl?raw';
+	import Canvas from './Canvas.svelte';
 
-	let inputUniverse = new Universe(100, 10000);
+	let inputUniverse = new Universe(100, 100000);
 	let outputUniverse: Universe;
 	let probe: boolean = true;
 	let isPlaying = writable<boolean>(false);
+	let playInterval: number | undefined;
 
 	let iterateFunction: (() => Promise<void>) | undefined;
 
@@ -15,7 +17,7 @@
 		lambda: 0.5,
 		gamma: 0.5,
 		beta: 0.1,
-		size: 10,
+		size: inputUniverse.size,
 		iterations: 0
 	};
 
@@ -271,32 +273,31 @@
 				console.log(outputUniverse);
 				probe = false;
 			}
-
-			// Only update if the animation is allowed to run
-			console.log({ isPlaying: get(isPlaying) });
-			if (isPlaying && HYPERPARAMS.iterations < 1000) {
-				// Run max of 144 iterations per second
-				requestAnimationFrame(() => iterate());
-			}
 		}
-
-		iterate();
 
 		return iterate;
 	}
 
+	function draw() {
+		iterateFunction?.();
+		requestAnimationFrame(draw);
+	}
+
 	function togglePlay() {
 		console.log('togglePlay');
-		if ($isPlaying && iterateFunction) {
-			iterateFunction();
+		if (!$isPlaying && iterateFunction) {
+			playInterval = setInterval(iterateFunction, 10);
 			return isPlaying.set(true);
 		}
 
+		clearInterval(playInterval);
 		return isPlaying.set(false);
 	}
 
 	onMount(async () => {
 		iterateFunction = await main();
+		// iterateFunction?.();
+		draw();
 	});
 </script>
 
@@ -306,12 +307,19 @@
 <button on:click={iterate}>iterate + 1</button>
 
 <h1>Results | iterations: {HYPERPARAMS.iterations}</h1>
-{#if outputUniverse}
-	<button on:click={() => (probe = true)}>Probe output</button>
+{#if iterateFunction}
+	<button
+		on:click={() => {
+			probe = true;
+			iterateFunction?.();
+		}}>Probe output</button
+	>
 	<button on:click={togglePlay}>
 		Toggle play | {$isPlaying ? 'now playing' : 'paused'}
 	</button>
+{/if}
 
+{#if outputUniverse}
 	<p>
 		total red agents: {outputUniverse.nodes.reduce((acc, node) => acc + node.red_agents, 0)}
 	</p>
@@ -319,6 +327,6 @@
 	<p>
 		total blue agents: {outputUniverse.nodes.reduce((acc, node) => acc + node.blue_agents, 0)}
 	</p>
-{/if}
 
-<pre>{JSON.stringify(outputUniverse, null, 2)}</pre>
+	<Canvas universe={outputUniverse} />
+{/if}
