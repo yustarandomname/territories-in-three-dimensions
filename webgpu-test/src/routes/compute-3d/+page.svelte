@@ -28,7 +28,7 @@
 	}
 
 	async function main() {
-		const adapter = await navigator.gpu?.requestAdapter();
+		const adapter = await navigator.gpu?.requestAdapter({ powerPreference: 'high-performance' });
 		const device = await adapter?.requestDevice();
 		if (!device) {
 			console.log('need a browser that supports WebGPU');
