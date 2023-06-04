@@ -20,7 +20,7 @@
 	const HYPERPARAMS = {
 		lambda: 0.5,
 		gamma: 0.5,
-		beta: 5e-3,
+		beta: 1e-7,
 		size: inputUniverse.size,
 		iterations: 0
 	};

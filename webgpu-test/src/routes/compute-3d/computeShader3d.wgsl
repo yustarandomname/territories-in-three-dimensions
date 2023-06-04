@@ -92,18 +92,21 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
     if (i > u32(pow(hyperparameters.size, 3))) {return;} // Quick return if out of bounds
 
     let e = 2.71828;
-    let lambda = 0.5;
-    let gamma = 0.5;
+    let xi_str = pow(hyperparameters.size, 3);
 
-    let red_graffiti = state_in[i].red_graffiti * (1.0 - lambda) + f32(state_in[i].red_agents) * gamma;
-    let blue_graffiti = state_in[i].blue_graffiti * (1.0 - lambda) + f32(state_in[i].blue_agents) * gamma;
+    let lambda = 1.0 - hyperparameters.lambda;
+    let gamma = hyperparameters.gamma;
+    let beta = hyperparameters.beta * xi_str;
+
+    let red_graffiti = state_in[i].red_graffiti * lambda + state_in[i].red_agents * gamma;
+    let blue_graffiti = state_in[i].blue_graffiti * lambda + state_in[i].blue_agents * gamma;
 
     state_out[i].red_agents = 0;
     state_out[i].blue_agents = 0;
     state_out[i].red_graffiti = red_graffiti;
     state_out[i].blue_graffiti = blue_graffiti;
-    state_out[i].red_strength = pow(e, (-hyperparameters.beta * red_graffiti));
-    state_out[i].blue_strength = pow(e, (-hyperparameters.beta * blue_graffiti));
+    state_out[i].red_strength = pow(e, -beta * red_graffiti);
+    state_out[i].blue_strength = pow(e, -beta * blue_graffiti);
 }
 
 @compute @workgroup_size(10) fn move_agents_out(
