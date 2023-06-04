@@ -13,6 +13,7 @@
 	let playInterval: number | undefined;
 	let do_iterations = 1000;
 	let sliceIndex = 0;
+	let error: string | undefined;
 
 	let iterateFunction: (() => Promise<void>) | undefined;
 
@@ -24,16 +25,12 @@
 		iterations: 0
 	};
 
-	function iterate() {
-		inputUniverse = outputUniverse.clone();
-		main();
-	}
-
 	async function main() {
 		const adapter = await navigator.gpu?.requestAdapter({ powerPreference: 'high-performance' });
 		const device = await adapter?.requestDevice();
 		if (!device) {
 			console.log('need a browser that supports WebGPU');
+			error = 'need a browser that supports WebGPU this demo only works in Chrome version 114+ ';
 			return;
 		}
 
@@ -304,12 +301,10 @@
 	onMount(reset);
 </script>
 
-<h1>Input</h1>
+<h1 class="text-3xl font-bold underline">Input</h1>
 <!-- <pre>{JSON.stringify(inputUniverse)}</pre> -->
 
-<button on:click={iterate}>iterate + 1</button>
-
-<h1>Results | iterations: {HYPERPARAMS.iterations}</h1>
+<h1 class="text-2xl">Results | iterations: {HYPERPARAMS.iterations}</h1>
 {#if iterateFunction}
 	<p>
 		Lambda: {HYPERPARAMS.lambda} | Gamma: {HYPERPARAMS.gamma}
@@ -344,17 +339,28 @@
 		}}
 		>Step
 	</button>
-	<button on:click={togglePlay}>
+	<!-- <button on:click={togglePlay}>
 		Toggle play | {$isPlaying ? 'now playing' : 'paused'}
-	</button>
+	</button> -->
 
 	<button on:click={reset}>Reset</button>
 {/if}
 
+{#if error}
+	<p class="absolute text-red-500">
+		{error}
+		<a href="chrome://settings/help" class="underline text-blue">
+			go to chrome://settings/help to update
+		</a>
+	</p>
+{/if}
+
 {#if outputUniverse}
-	<label>
-		Slice at {sliceIndex}
-		<input type="range" min="0" max={HYPERPARAMS.size - 2} bind:value={sliceIndex} />
-	</label>
+	<p>
+		<label>
+			Slice at {sliceIndex}
+			<input type="range" min="0" max={HYPERPARAMS.size - 2} bind:value={sliceIndex} />
+		</label>
+	</p>
 	<Canvas universe={outputUniverse} offset={sliceIndex * (HYPERPARAMS.size * HYPERPARAMS.size)} />
 {/if}
