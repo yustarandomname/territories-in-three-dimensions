@@ -4,6 +4,7 @@
 	import { Universe } from '../Universe';
 	import computeShader from './computeShader3d.wgsl?raw';
 	import Canvas from '../compute/Canvas.svelte';
+	import AgentDensityPlot from './AgentDensityPlot.svelte';
 	// import Canvas from './Canvas.svelte';
 
 	let inputUniverse = new Universe(50, 10000000, 3);
@@ -358,9 +359,15 @@
 {#if outputUniverse}
 	<p>
 		<label>
-			Slice at {sliceIndex}
+			Slice at z =
 			<input type="range" min="0" max={HYPERPARAMS.size - 2} bind:value={sliceIndex} />
+			{sliceIndex}
 		</label>
 	</p>
+
 	<Canvas universe={outputUniverse} offset={sliceIndex * (HYPERPARAMS.size * HYPERPARAMS.size)} />
+
+	{#key outputUniverse}
+		<AgentDensityPlot nodes={outputUniverse.nodes.slice(0, HYPERPARAMS.size)} />
+	{/key}
 {/if}
