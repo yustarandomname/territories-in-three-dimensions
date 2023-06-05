@@ -92,7 +92,7 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
     if (i > u32(pow(hyperparameters.size, 3))) {return;} // Quick return if out of bounds
 
     let e = 2.71828;
-    let xi_str = pow(hyperparameters.size, 3);
+    let xi_str = pow(hyperparameters.size, 2);
 
     let lambda = 1.0 - hyperparameters.lambda;
     let gamma = hyperparameters.gamma;

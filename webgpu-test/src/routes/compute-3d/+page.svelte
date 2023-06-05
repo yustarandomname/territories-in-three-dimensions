@@ -5,9 +5,10 @@
 	import computeShader from './computeShader3d.wgsl?raw';
 	import Canvas from '../compute/Canvas.svelte';
 	import AgentDensityPlot from './AgentDensityPlot.svelte';
-	// import Canvas from './Canvas.svelte';
 
-	let inputUniverse = new Universe(50, 10000000, 3);
+	let total_agents = 625000;
+
+	let inputUniverse = new Universe(50, total_agents, 3);
 	let outputUniverse: Universe;
 	let probe: boolean = true;
 	let isPlaying = writable<boolean>(false);
@@ -302,13 +303,12 @@
 	onMount(reset);
 </script>
 
-<h1 class="text-3xl font-bold underline">Input</h1>
-<!-- <pre>{JSON.stringify(inputUniverse)}</pre> -->
-
-<h1 class="text-2xl">Results | iterations: {HYPERPARAMS.iterations}</h1>
+<h1 class="text-2xl fixed bg-white/80 p-4 top-0 left-0 w-full">
+	Results | iterations: {HYPERPARAMS.iterations}
+</h1>
 {#if iterateFunction}
-	<p>
-		Lambda: {HYPERPARAMS.lambda} | Gamma: {HYPERPARAMS.gamma}
+	<p class="mt-8">
+		Lambda: <code>{HYPERPARAMS.lambda}</code> | <code>Gamma: {HYPERPARAMS.gamma}</code>
 		<label>
 			| Beta:
 			<input on:change={reset} bind:value={HYPERPARAMS.beta} />
@@ -357,13 +357,17 @@
 {/if}
 
 {#if outputUniverse}
+	<h3 class="my-2 text-xl">Metrics</h3>
+	<p>Agents per species: <code>{total_agents}</code></p>
 	<p>
-		<label>
-			Slice at z =
-			<input type="range" min="0" max={HYPERPARAMS.size - 2} bind:value={sliceIndex} />
-			{sliceIndex}
-		</label>
+		Agents per species per cell: <code>{total_agents / Math.pow(HYPERPARAMS.size, 3)}</code>
 	</p>
+
+	<label>
+		Slice at z =
+		<code class="w-8">{sliceIndex}</code>
+		<input type="range" min="0" max={HYPERPARAMS.size - 2} bind:value={sliceIndex} />
+	</label>
 
 	<Canvas universe={outputUniverse} offset={sliceIndex * (HYPERPARAMS.size * HYPERPARAMS.size)} />
 
@@ -371,3 +375,9 @@
 		<AgentDensityPlot nodes={outputUniverse.nodes.slice(0, HYPERPARAMS.size)} />
 	{/key}
 {/if}
+
+<style lang="postcss">
+	code {
+		@apply text-red-700;
+	}
+</style>

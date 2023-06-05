@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Canvas, Layer, t, type Render } from 'svelte-canvas';
+	import { Canvas, Layer, type Render } from 'svelte-canvas';
 	import type { Universe } from '../Universe';
 
 	export let universe: Universe;
