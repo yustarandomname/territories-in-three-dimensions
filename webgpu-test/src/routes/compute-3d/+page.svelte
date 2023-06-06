@@ -1,18 +1,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { writable } from 'svelte/store';
 	import { Universe } from '../Universe';
 	import computeShader from './computeShader3d.wgsl?raw';
 	import Canvas from '../compute/Canvas.svelte';
 	import AgentDensityPlot from './AgentDensityPlot.svelte';
 
-	let total_agents = 625000;
+	let total_agents = 6250000;
+	let beta_input = '(2/3) * 1e-5';
+	let beta_input_error = '';
 
 	let inputUniverse = new Universe(50, total_agents, 3);
 	let outputUniverse: Universe;
 	let probe: boolean = true;
-	let isPlaying = writable<boolean>(false);
-	let playInterval: number | undefined;
 	let do_iterations = 1000;
 	let sliceIndex = 0;
 	let error: string | undefined;
@@ -22,9 +21,10 @@
 	const HYPERPARAMS = {
 		lambda: 0.5,
 		gamma: 0.5,
-		beta: 1e-7,
+		beta: eval(beta_input),
 		size: inputUniverse.size,
-		iterations: 0
+		iterations: 0,
+		total_agents: total_agents
 	};
 
 	async function main() {
@@ -37,7 +37,7 @@
 		}
 
 		const module = device.createShaderModule({
-			label: 'doubling compute module',
+			label: 'compute module',
 			code: computeShader
 		});
 
@@ -49,7 +49,8 @@
 			HYPERPARAMS.gamma,
 			HYPERPARAMS.beta,
 			HYPERPARAMS.size,
-			HYPERPARAMS.iterations
+			HYPERPARAMS.iterations,
+			HYPERPARAMS.total_agents
 		]);
 		const uniformBuffer = device.createBuffer({
 			label: 'Grid Uniforms',
@@ -63,12 +64,12 @@
 			device.createBuffer({
 				label: 'Cell State A',
 				size: input.byteLength,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
+				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
 			}),
 			device.createBuffer({
 				label: 'Cell State B',
 				size: input.byteLength,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
+				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
 			})
 		] as const;
 
@@ -81,12 +82,12 @@
 			device.createBuffer({
 				label: 'Agents Out red',
 				size: agentsOutArray.byteLength,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST //TODO: remove COPY src
+				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
 			}),
 			device.createBuffer({
 				label: 'Agents Out blue',
 				size: agentsOutArray.byteLength,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST //TODO: remove COPY src
+				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
 			})
 		];
 		device.queue.writeBuffer(agentsOutBuffers[0], 0, agentsOutArray);
@@ -282,17 +283,6 @@
 		return iterate;
 	}
 
-	function togglePlay() {
-		console.log('togglePlay');
-		if (!$isPlaying && iterateFunction) {
-			playInterval = setInterval(iterateFunction, 10);
-			return isPlaying.set(true);
-		}
-
-		clearInterval(playInterval);
-		return isPlaying.set(false);
-	}
-
 	async function reset() {
 		HYPERPARAMS.iterations = 0;
 		probe = true;
@@ -307,12 +297,34 @@
 	Results | iterations: {HYPERPARAMS.iterations}
 </h1>
 {#if iterateFunction}
-	<p class="mt-8">
-		Lambda: <code>{HYPERPARAMS.lambda}</code> | <code>Gamma: {HYPERPARAMS.gamma}</code>
+	<p class="mt-12">
+		Lambda: <code>{HYPERPARAMS.lambda}</code> | Gamma: <code>{HYPERPARAMS.gamma}</code>
 		<label>
-			| Beta:
-			<input on:change={reset} bind:value={HYPERPARAMS.beta} />
+			<br />Beta:
+			<input
+				class="w-96"
+				on:change={reset}
+				on:keyup={() => {
+					try {
+						let value = eval(beta_input);
+						if (value) {
+							HYPERPARAMS.beta = value;
+							beta_input_error = '';
+						} else {
+							HYPERPARAMS.beta = 0;
+							beta_input_error = 'Invalid expression';
+						}
+					} catch (e) {
+						beta_input_error = e?.message || 'Invalid expression';
+					}
+				}}
+				bind:value={beta_input}
+			/>
+			= <code>{HYPERPARAMS.beta.toExponential()}</code>
 		</label>
+		{#if beta_input_error}
+			<div class="text-red-500">Error: {beta_input_error}</div>
+		{/if}
 	</p>
 
 	<button
@@ -365,7 +377,7 @@
 
 	<label>
 		Slice at z =
-		<code class="w-8">{sliceIndex}</code>
+		<code class="inline-block w-4">{sliceIndex}</code>
 		<input type="range" min="0" max={HYPERPARAMS.size - 2} bind:value={sliceIndex} />
 	</label>
 

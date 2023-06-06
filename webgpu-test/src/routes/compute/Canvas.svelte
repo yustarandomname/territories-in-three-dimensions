@@ -6,6 +6,7 @@
 	export let isSliding: boolean = false;
 	export let sliceIndex: number = 0;
 	export let offset: number = 0;
+	export let mayority: boolean = false;
 
 	function range(from: number, to: number, step: number = 1) {
 		return Array.from({ length: to - from }, (_, i) => from + i * step);
@@ -24,9 +25,21 @@
 				if (isSliding && sliceIndex != x) continue;
 
 				context.beginPath();
-				context.fillStyle = `rgb(${Math.round(
-					255 * (node.red_agents / totalNodes)
-				)}, 0, ${Math.round(255 * (node.blue_agents / totalNodes))})`;
+
+				if (mayority && node.red_agents > node.blue_agents) {
+					context.fillStyle = `rgb(255, 0, 0)`;
+				} else if (mayority && node.blue_agents > node.red_agents) {
+					context.fillStyle = `rgb(0, 0, 255)`;
+				} else {
+					context.fillStyle = `rgb(0, 255, 0)`;
+				}
+
+				if (!mayority) {
+					context.fillStyle = `rgb(${Math.round(
+						255 * (node.red_agents / totalNodes)
+					)}, 0, ${Math.round(255 * (node.blue_agents / totalNodes))})`;
+				}
+
 				context.fillRect(boxSizeX * x, boxSizeY * y, boxSizeX, boxSizeY);
 				context.closePath();
 			}

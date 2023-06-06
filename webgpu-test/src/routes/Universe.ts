@@ -26,7 +26,11 @@ export class Node {
     }
 }
 
-export class Universe {
+interface ToF32Buffer {
+    to_f32_buffer(): Float32Array;
+}
+
+export class Universe implements ToF32Buffer {
     nodes: Node[] = [];
     total_size: number;
 

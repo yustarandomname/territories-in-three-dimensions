@@ -5,8 +5,6 @@
 	export let nodes: Node[];
 	let canvasEl: HTMLCanvasElement;
 
-	console.log({ nodes });
-
 	var data = {
 		labels: nodes.map((_, i) => i),
 		datasets: [
