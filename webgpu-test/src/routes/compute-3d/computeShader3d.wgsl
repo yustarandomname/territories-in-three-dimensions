@@ -199,6 +199,8 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
     total_blue_agents += blue_agents_out[neighbour_index[4]][1]; // Move all blue agents from left neightbour to this cell
     total_blue_agents += blue_agents_out[neighbour_index[5]][2]; // Move all blue agents from back neightbour to this cell
     state_out[i].blue_agents = total_blue_agents;
+
+    order_parameter_out = 0.0;
 }
 
 @compute @workgroup_size(workgroup_size) fn calculate_order_param(
