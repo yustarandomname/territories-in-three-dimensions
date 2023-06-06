@@ -4,9 +4,10 @@
 	import computeShader from './computeShader3d.wgsl?raw';
 	import Canvas from '../compute/Canvas.svelte';
 	import AgentDensityPlot from './AgentDensityPlot.svelte';
+	import OrderParamsPlot from './OrderParamsPlot.svelte';
 
 	let total_agents = 6250000;
-	let beta_input = '(2/3) * 1e-5';
+	let beta_input = '(4/3) * 1e-5';
 	let beta_input_error = '';
 
 	let inputUniverse = new Universe(50, total_agents, 3);
@@ -15,6 +16,8 @@
 	let do_iterations = 1000;
 	let sliceIndex = 0;
 	let error: string | undefined;
+
+	let orderParams: { x: number; y: number }[] = [];
 
 	let iterateFunction: (() => Promise<void>) | undefined;
 
@@ -64,12 +67,12 @@
 			device.createBuffer({
 				label: 'Cell State A',
 				size: input.byteLength,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
 			}),
 			device.createBuffer({
 				label: 'Cell State B',
 				size: input.byteLength,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
 			})
 		] as const;
 
@@ -100,13 +103,26 @@
 			usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
 		});
 
+		// create a buffer on the GPU to get the current order parameter
+		const orderBuffer = device.createBuffer({
+			label: 'order buffer',
+			size: Float32Array.BYTES_PER_ELEMENT,
+			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC
+		});
+
+		const orderResultBuffer = device.createBuffer({
+			label: 'result buffer',
+			size: Float32Array.BYTES_PER_ELEMENT,
+			usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+		});
+
 		const bindGroupLayout = device.createBindGroupLayout({
 			label: 'Cell Bind Group Layout',
 			entries: [
 				{
 					binding: 0,
 					visibility: GPUShaderStage.COMPUTE,
-					buffer: {} // Grid uniform buffer
+					buffer: { type: 'uniform' } // Grid uniform buffer
 				},
 				{
 					binding: 1,
@@ -116,17 +132,22 @@
 				{
 					binding: 2,
 					visibility: GPUShaderStage.COMPUTE,
-					buffer: { type: 'storage' } // Cell state output buffer
+					buffer: { type: 'storage' } // Cell red agent neighbours buffer
 				},
 				{
 					binding: 3,
 					visibility: GPUShaderStage.COMPUTE,
-					buffer: { type: 'storage' } // Cell state output buffer
+					buffer: { type: 'storage' } // Cell blue agent neighbours buffer
 				},
 				{
 					binding: 4,
 					visibility: GPUShaderStage.COMPUTE,
 					buffer: { type: 'storage' } // Cell state output buffer
+				},
+				{
+					binding: 5,
+					visibility: GPUShaderStage.COMPUTE,
+					buffer: { type: 'storage' } // Cell state order parameter buffer
 				}
 			]
 		});
@@ -172,6 +193,10 @@
 						{
 							binding: 4,
 							resource: { buffer: agentsOutBuffers[1] }
+						},
+						{
+							binding: 5,
+							resource: { buffer: orderBuffer }
 						}
 					]
 				}),
@@ -198,6 +223,10 @@
 						{
 							binding: 4,
 							resource: { buffer: agentsOutBuffers[1] }
+						},
+						{
+							binding: 5,
+							resource: { buffer: orderBuffer }
 						}
 					]
 				})
@@ -217,36 +246,34 @@
 			'move_agents_in',
 			device
 		);
+		const { computePipeline: orderParamPipeline, bindGroups: orderParamBindGroups } =
+			createPipeline('calculate_order_param', device);
 
 		async function iterate() {
 			if (!device) return;
 
 			const encoder = device.createCommandEncoder();
 
-			const dispatchWorkgroups = Math.ceil(Math.pow(HYPERPARAMS.size, 3) / 10);
+			const dispatchWorkgroups = Math.ceil(Math.pow(HYPERPARAMS.size, 3) / 100);
 
 			{
 				// Update graffiti and push strength
 				const pass = encoder.beginComputePass();
 				pass.setPipeline(updateGraffitiPipeline);
 				pass.setBindGroup(0, updateBindGroups[HYPERPARAMS.iterations % 2]);
-				pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1); // TODO: math.ceil
-				pass.end();
-			}
-			{
-				// Move agents out
-				const pass = encoder.beginComputePass();
+				pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1);
+
 				pass.setPipeline(moveAgentsOutPipeline);
 				pass.setBindGroup(0, moveOutBindGroups[HYPERPARAMS.iterations % 2]);
-				pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1); // TODO: math.ceil
-				pass.end();
-			}
-			{
-				// Move agents in
-				const pass = encoder.beginComputePass();
+				pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1);
+
 				pass.setPipeline(moveAgentsInPipeline);
 				pass.setBindGroup(0, moveInBindGroups[HYPERPARAMS.iterations % 2]);
-				pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1); // TODO: math.ceil
+				pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1);
+
+				pass.setPipeline(orderParamPipeline);
+				pass.setBindGroup(0, orderParamBindGroups[HYPERPARAMS.iterations % 2]);
+				pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1);
 				pass.end();
 			}
 
@@ -260,6 +287,7 @@
 					0,
 					resultBuffer.size
 				);
+				encoder.copyBufferToBuffer(orderBuffer, 0, orderResultBuffer, 0, orderResultBuffer.size);
 			}
 
 			HYPERPARAMS.iterations++;
@@ -276,6 +304,12 @@
 				// Output the results
 				outputUniverse = Universe.from_result(result, HYPERPARAMS.size, 3);
 				console.log('output', outputUniverse.nodes.slice(0, 10));
+
+				await orderResultBuffer.mapAsync(GPUMapMode.READ);
+				const orderResult = new Float32Array(orderResultBuffer.getMappedRange().slice(0));
+				orderResultBuffer.unmap();
+
+				orderParams = [...orderParams, { x: HYPERPARAMS.iterations, y: orderResult[0] }];
 				probe = false;
 			}
 		}
@@ -288,6 +322,7 @@
 		probe = true;
 		iterateFunction = await main();
 		iterateFunction?.();
+		orderParams = [];
 	}
 
 	onMount(reset);
@@ -352,9 +387,6 @@
 		}}
 		>Step
 	</button>
-	<!-- <button on:click={togglePlay}>
-		Toggle play | {$isPlaying ? 'now playing' : 'paused'}
-	</button> -->
 
 	<button on:click={reset}>Reset</button>
 {/if}
@@ -385,6 +417,10 @@
 
 	{#key outputUniverse}
 		<AgentDensityPlot nodes={outputUniverse.nodes.slice(0, HYPERPARAMS.size)} />
+	{/key}
+
+	{#key orderParams}
+		<OrderParamsPlot {orderParams} />
 	{/key}
 {/if}
 

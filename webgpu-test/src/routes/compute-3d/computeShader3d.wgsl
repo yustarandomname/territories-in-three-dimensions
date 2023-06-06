@@ -21,6 +21,8 @@ struct RandomResult {
     value: f32,
 }
 
+const workgroup_size = 100;
+
 @group(0) @binding(0) var<uniform> hyperparameters: HyperParams; 
 @group(0) @binding(1) var<storage> state_in: array<Node>; 
 @group(0) @binding(2) var<storage, read_write> state_out: array<Node>;
@@ -28,7 +30,7 @@ struct RandomResult {
 @group(0) @binding(3) var<storage, read_write> red_agents_out: array<array<f32, 6>>;
 @group(0) @binding(4) var<storage, read_write> blue_agents_out: array<array<f32, 6>>;
 
-// @group(0) @binding(5) var<storage, read_write> order_parameter_out: array<f32>;
+@group(0) @binding(5) var<storage, read_write> order_parameter_out: f32;
 
 fn taus_step(z: u32, S1: u32, S2: u32, S3: u32, M: u32) -> u32 {
     let b = (((z << S1) ^ z) >> S2);
@@ -88,7 +90,7 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
     return vec2<f32>(total_red_strength, total_blue_strength);
 }
 
-@compute @workgroup_size(10) fn update_graffiti_and_push_strength(
+@compute @workgroup_size(workgroup_size) fn update_graffiti_and_push_strength(
     @builtin(global_invocation_id) id: vec3<u32>
 ) {
     let i = id.x;
@@ -112,7 +114,7 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
     state_out[i].blue_strength = pow(e, -beta * blue_graffiti);
 }
 
-@compute @workgroup_size(10) fn move_agents_out(
+@compute @workgroup_size(workgroup_size) fn move_agents_out(
     @builtin(global_invocation_id) id: vec3<u32>
 ) {
     let i = id.x;
@@ -172,7 +174,7 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
     blue_agents_out[i] = cell_blue_agents_out;
 }
 
-@compute @workgroup_size(10) fn move_agents_in(
+@compute @workgroup_size(workgroup_size) fn move_agents_in(
     @builtin(global_invocation_id) id: vec3<u32>
 ) {
     let i = id.x;
@@ -180,46 +182,50 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
 
     let neighbour_index = get_neightbour_index(i);
 
-    state_out[i].red_agents += red_agents_out[neighbour_index[0]][3]; // Move all red agents from top neightbour to this cell
-    state_out[i].red_agents += red_agents_out[neighbour_index[1]][4]; // Move all red agents from right neightbour to this cell
-    state_out[i].red_agents += red_agents_out[neighbour_index[2]][5]; // Move all red agents from front neightbour to this cell
-    state_out[i].red_agents += red_agents_out[neighbour_index[3]][0]; // Move all red agents from bottom neightbour to this cell
-    state_out[i].red_agents += red_agents_out[neighbour_index[4]][1]; // Move all red agents from left neightbour to this cell
-    state_out[i].red_agents += red_agents_out[neighbour_index[5]][2]; // Move all red agents from back neightbour to this cell
+    var total_red_agents = 0.0;
+    total_red_agents += red_agents_out[neighbour_index[0]][3]; // Move all red agents from top neightbour to this cell
+    total_red_agents += red_agents_out[neighbour_index[1]][4]; // Move all red agents from right neightbour to this cell
+    total_red_agents += red_agents_out[neighbour_index[2]][5]; // Move all red agents from front neightbour to this cell
+    total_red_agents += red_agents_out[neighbour_index[3]][0]; // Move all red agents from bottom neightbour to this cell
+    total_red_agents += red_agents_out[neighbour_index[4]][1]; // Move all red agents from left neightbour to this cell
+    total_red_agents += red_agents_out[neighbour_index[5]][2]; // Move all red agents from back neightbour to this cell
+    state_out[i].red_agents = total_red_agents;
 
-    state_out[i].blue_agents += blue_agents_out[neighbour_index[0]][3]; // Move all blue agents from top neightbour to this cell
-    state_out[i].blue_agents += blue_agents_out[neighbour_index[1]][4]; // Move all blue agents from right neightbour to this cell
-    state_out[i].blue_agents += blue_agents_out[neighbour_index[2]][5]; // Move all blue agents from front neightbour to this cell
-    state_out[i].blue_agents += blue_agents_out[neighbour_index[3]][0]; // Move all blue agents from bottom neightbour to this cell
-    state_out[i].blue_agents += blue_agents_out[neighbour_index[4]][1]; // Move all blue agents from left neightbour to this cell
-    state_out[i].blue_agents += blue_agents_out[neighbour_index[5]][2]; // Move all blue agents from back neightbour to this cell
+    var total_blue_agents = 0.0;
+    total_blue_agents += blue_agents_out[neighbour_index[0]][3]; // Move all blue agents from top neightbour to this cell
+    total_blue_agents += blue_agents_out[neighbour_index[1]][4]; // Move all blue agents from right neightbour to this cell
+    total_blue_agents += blue_agents_out[neighbour_index[2]][5]; // Move all blue agents from front neightbour to this cell
+    total_blue_agents += blue_agents_out[neighbour_index[3]][0]; // Move all blue agents from bottom neightbour to this cell
+    total_blue_agents += blue_agents_out[neighbour_index[4]][1]; // Move all blue agents from left neightbour to this cell
+    total_blue_agents += blue_agents_out[neighbour_index[5]][2]; // Move all blue agents from back neightbour to this cell
+    state_out[i].blue_agents = total_blue_agents;
 }
 
-@compute @workgroup_size(10) fn calculate_order_param(
+@compute @workgroup_size(workgroup_size) fn calculate_order_param(
     @builtin(global_invocation_id) id: vec3<u32>
 ) {
     let i = id.x;
-    if (i > u32(pow(hyperparameters.size, 3))) {return;}
+    let total_size = pow(hyperparameters.size, 3);
+    if (i > u32(total_size)) {return;}
 
+    // One over the (number of neighbours) * (the total number of cells) * (the total number of agents of both species squared)
     let neighbours = 6.0;
-    let norm_factor = 1 / (neighbours * pow(hyperparameters.size, 3) * pow(hyperparameters.total_agents, 2));
+    let norm_factor = 1 / (neighbours * pow(hyperparameters.size, 3) * pow(2 * hyperparameters.total_agents, 2));
     
-    let total_agents_in_cell = state_out[i].red_agents + state_out[i].blue_agents;
-    let rho_red = state_out[i].red_agents / total_agents_in_cell;
-    let rho_blue = state_out[i].blue_agents / total_agents_in_cell;
+    let rho_red = state_out[i].red_agents * total_size;
+    let rho_blue = state_out[i].blue_agents * total_size;
     let delta_rho = rho_red - rho_blue;
 
     let neighbour_indeces = get_neightbour_index(i);
 
+    // Sum of delta rho for all neighbours
     var delta_rho_neighbours = 0.0;
     for (var ai: u32 = 0; ai < u32(neighbours); ai++) {
         let neighbour_index = neighbour_indeces[ai];
-        let neighbour_total_agents_in_cell = state_out[neighbour_index].red_agents + state_out[neighbour_index].blue_agents;
-        let neighbour_rho_red = state_out[neighbour_index].red_agents / neighbour_total_agents_in_cell;
-        let neighbour_rho_blue = state_out[neighbour_index].blue_agents / neighbour_total_agents_in_cell;
+        let neighbour_rho_red = state_out[neighbour_index].red_agents * total_size;
+        let neighbour_rho_blue = state_out[neighbour_index].blue_agents * total_size;
         delta_rho_neighbours += neighbour_rho_red - neighbour_rho_blue;
     }    
     
-
-    // order_parameter_out[i] += norm_factor * delta_rho * delta_rho_neighbours;
+    order_parameter_out += norm_factor * delta_rho * delta_rho_neighbours;
 }

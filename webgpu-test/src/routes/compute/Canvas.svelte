@@ -26,18 +26,16 @@
 
 				context.beginPath();
 
-				if (mayority && node.red_agents > node.blue_agents) {
+				if (!mayority) {
+					context.fillStyle = `rgb(${Math.round(
+						255 * (node.red_agents / totalNodes)
+					)}, 0, ${Math.round(255 * (node.blue_agents / totalNodes))})`;
+				} else if (node.red_agents > node.blue_agents) {
 					context.fillStyle = `rgb(255, 0, 0)`;
 				} else if (mayority && node.blue_agents > node.red_agents) {
 					context.fillStyle = `rgb(0, 0, 255)`;
 				} else {
 					context.fillStyle = `rgb(0, 255, 0)`;
-				}
-
-				if (!mayority) {
-					context.fillStyle = `rgb(${Math.round(
-						255 * (node.red_agents / totalNodes)
-					)}, 0, ${Math.round(255 * (node.blue_agents / totalNodes))})`;
 				}
 
 				context.fillRect(boxSizeX * x, boxSizeY * y, boxSizeX, boxSizeY);
