@@ -32,9 +32,11 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@mdi/js": "^7.2.96",
 		"@types/seedrandom": "^3.0.5",
 		"@webgpu/types": "^0.1.32",
 		"chart.js": "^4.3.0",
+		"mdi-svelte-ts": "^1.0.0",
 		"seedrandom": "^3.0.5",
 		"svelte-canvas": "^0.9.3"
 	}
