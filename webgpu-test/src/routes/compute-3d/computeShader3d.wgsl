@@ -132,38 +132,42 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
     
     // Seed with neighbour indeces
     let iter = u32(hyperparameters.iterations + 1);
-    let seed = vec4<u32>(neighbour_index[0] >> iter, neighbour_index[1] << iter, neighbour_index[2] >> (iter * 2), neighbour_index[3] << (iter * 2));
+    let seed = vec4<u32>(neighbour_index[0] * iter, neighbour_index[1], neighbour_index[2], neighbour_index[3]);
     var prng = random(seed);
     prng = random(prng.state);
 
-    // red_agents_out[i][1] = state_in[i].red_agents; // Move all agents to right neighbour
+    red_agents_out[i][1] = state_in[i].red_agents; // Move all agents to right neighbour
     var cell_red_agents_out = array<f32, 6>(0, 0, 0, 0, 0, 0);
     var cell_blue_agents_out = array<f32, 6>(0, 0, 0, 0, 0, 0);
+
+    var red_strength_acc = array<f32, 6>(state_out[neighbour_index[0]].red_strength, 0, 0, 0, 0, 0);
+    var blue_strenths_acc = array<f32, 6>(state_out[neighbour_index[0]].blue_strength, 0, 0, 0, 0, 0);
+
+    for (var bi: u32 = 1; bi < 6; bi++) {
+        red_strength_acc[bi] = red_strength_acc[bi-1] + state_out[neighbour_index[bi]].red_strength;
+        blue_strenths_acc[bi] = blue_strenths_acc[bi-1] + state_out[neighbour_index[bi]].blue_strength;
+    }
     
-    // // Move each red agent
+    // Move each red agent
     for (var ri: u32 = 0; ri < u32(state_in[i].red_agents); ri++) {
         prng = random(prng.state);
-        let random_result = random(prng.state).value * total_blue_strength;
-        var blue_strength_sum = 0.0;
+        let random_result = prng.value * total_blue_strength;
 
         for (var bi: u32 = 0; bi < 6; bi++) {
-            blue_strength_sum += state_out[neighbour_index[bi]].blue_strength;
-            if (random_result <= blue_strength_sum) {
+            if (random_result <= blue_strenths_acc[bi]) {
                 cell_red_agents_out[bi] += 1;
                 break;
             }
         }
     }  
 
-    // // Move each blue agent
+    // Move each blue agent
     for (var bi: u32 = 0; bi < u32(state_in[i].blue_agents); bi++) {
         prng = random(prng.state);
-        let random_result = random(prng.state).value * total_red_strength;
-        var red_strength_sum = 0.0;
+        let random_result = prng.value * total_red_strength;
 
         for (var ri: u32 = 0; ri < 6; ri++) {
-            red_strength_sum += state_out[neighbour_index[ri]].red_strength;
-            if (random_result <= red_strength_sum) {
+            if (random_result <= red_strength_acc[ri]) {
                 cell_blue_agents_out[ri] += 1;
                 break;
             }

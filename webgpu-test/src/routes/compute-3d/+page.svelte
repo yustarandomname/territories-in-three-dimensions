@@ -88,7 +88,7 @@
 			pass.end();
 		}
 
-		// Calculate order parameter
+		// // Calculate order parameter
 		const pass = encoder.beginComputePass();
 		pass.setPipeline(pipelines['calculate_order_param'].pipeline);
 		pass.setBindGroup(0, pipelines['calculate_order_param'].bindGroups[HYPERPARAMS.iterations % 2]);
@@ -116,26 +116,24 @@
 		console.timeEnd(`Time to iterate: ${do_iterations}`);
 
 		// Read results
-		// await outputBuffers.resultBuffer.mapAsync(GPUMapMode.READ);
-		// const result = new Float32Array(outputBuffers.resultBuffer.getMappedRange().slice(0));
-		// outputBuffers.resultBuffer.unmap();
+		await outputBuffers.resultBuffer.mapAsync(GPUMapMode.READ);
+		const result = new Float32Array(outputBuffers.resultBuffer.getMappedRange().slice(0));
+		outputBuffers.resultBuffer.unmap();
 
 		// // Output the results
-		// outputUniverse = Universe.from_result(result, HYPERPARAMS.size, 3);
-		// console.log('output', outputUniverse.nodes.slice(0, 10));
-
-		console.log(await Promise.resolve('hello'));
+		outputUniverse = Universe.from_result(result, HYPERPARAMS.size, 3);
+		console.log('output', outputUniverse.nodes.slice(0, 10));
 
 		// console.time(`Time to read`);
-		// await outputBuffers.orderResultBuffer.mapAsync(GPUMapMode.READ);
-		console.log(outputBuffers.orderResultBuffer.size, storageBuffers.orderBuffer.size);
 		await outputBuffers.orderResultBuffer.mapAsync(GPUMapMode.READ);
-		console.log(outputBuffers.orderResultBuffer.size, storageBuffers.orderBuffer.size);
+		const orderResult = new Float32Array(outputBuffers.orderResultBuffer.getMappedRange().slice(0));
+		outputBuffers.orderResultBuffer.unmap();
 		// console.timeEnd(`Time to read`);
-		// const orderResult = new Float32Array(outputBuffers.orderResultBuffer.getMappedRange().slice(0));
-		// outputBuffers.orderResultBuffer.unmap();
 
-		// orderParams = [...orderParams, { iteration: HYPERPARAMS.iterations, orderParam: 1 }];
+		orderParams = [
+			...orderParams,
+			{ iteration: HYPERPARAMS.iterations, orderParam: orderResult[0] }
+		];
 		loading = false;
 	}
 </script>
