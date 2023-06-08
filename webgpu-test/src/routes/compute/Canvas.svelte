@@ -46,7 +46,7 @@
 </script>
 
 <div class="w-full h-full flex justify-center items-center">
-	<Canvas class="border w-full" height={640}>
+	<Canvas class="w-full" height={640}>
 		<Layer {render} />
 	</Canvas>
 </div>

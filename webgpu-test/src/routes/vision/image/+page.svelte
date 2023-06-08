@@ -17,15 +17,36 @@
 	import TabItem from '../components/TabItem.svelte';
 	import Sheet from '../components/Sheet.svelte';
 	import SortableList from '../components/SortableList.svelte';
+	import { onMount } from 'svelte';
+	import { gpuStore, isCompleteGpuStore, isLoading } from '../gpuStore';
+	import { Universe } from '../../Universe';
+	import Canvas from '../../compute/Canvas.svelte';
+	import { fly } from 'svelte/transition';
 
-	let autoPlayPanel = true;
-	let iterateStep = 10000;
+	let autoPlayPanel = false;
+	let iterateStep = 1000;
 	let iterateAutoStep = 10000;
-	let autoPlaySteps: { id: String; steps: number }[] = [
+	let total_agents = 6250000;
+	let sliceIndex = 0;
+	let autoPlaySteps: { id: string; steps: number }[] = [
 		{ id: 'a', steps: 100 },
 		{ id: 'b', steps: 400 },
 		{ id: 'c', steps: 1000 }
 	];
+
+	let inputUniverse = new Universe(50, total_agents, 3);
+	let outputUniverse: Universe;
+
+	$: iterations = (isCompleteGpuStore($gpuStore) ? $gpuStore?.hyperparameters?.iterations : 0) || 0;
+
+	const HYPERPARAMS = {
+		lambda: 0.5,
+		gamma: 0.5,
+		beta: (4 / 3) * 1e-5,
+		size: inputUniverse.size,
+		iterations: 0,
+		total_agents: total_agents
+	};
 
 	function removePlayId(id: string) {
 		autoPlaySteps = autoPlaySteps.filter((step) => step.id !== id);
@@ -34,10 +55,58 @@
 	function addPlayId() {
 		autoPlaySteps = [...autoPlaySteps, { id: Math.random().toString(), steps: iterateAutoStep }];
 	}
+
+	async function reset() {
+		gpuStore.reset();
+		HYPERPARAMS.iterations = 0;
+
+		await gpuStore.init();
+
+		const universeArray = new Float32Array(inputUniverse.to_f32_buffer());
+		await gpuStore.setup(HYPERPARAMS, universeArray);
+
+		if (!isCompleteGpuStore($gpuStore)) return;
+
+		console.log('gpuStore', $gpuStore.hyperparameters);
+
+		const resultArrays = await gpuStore.iterate(1);
+		console.log('resultArrays', resultArrays);
+
+		if (!resultArrays) return;
+
+		outputUniverse = Universe.from_result(resultArrays.result, HYPERPARAMS.size, 3);
+	}
+
+	async function iterate() {
+		if (!isCompleteGpuStore($gpuStore)) return;
+
+		const resultArrays = await gpuStore.iterate(iterateStep);
+
+		if (!resultArrays) return;
+
+		outputUniverse = Universe.from_result(resultArrays.result, HYPERPARAMS.size, 3);
+	}
+
+	onMount(async () => {
+		await reset();
+	});
 </script>
 
-<Window title="Iterations: 100" showSheet={autoPlayPanel}>
-	<img alt="rendered version after n iterations" class="h-full w-full" src="/result.png" />
+{#if $isLoading.loading}
+	<div
+		transition:fly={{ y: -10 }}
+		class="absolute top-12 bg-slate-500/80 px-4 py-6 backdrop:blur-lg rounded-lg"
+	>
+		{$isLoading.message}
+	</div>
+{/if}
+
+<Window title="Iterations: {iterations}" showSheet={autoPlayPanel}>
+	{#if !outputUniverse}
+		<img alt="rendered version after n iterations" class="h-full w-full" src="/result.png" />
+	{:else}
+		<Canvas universe={outputUniverse} offset={sliceIndex * (HYPERPARAMS.size * HYPERPARAMS.size)} />
+	{/if}
 
 	<button
 		slot="topTrailing"
@@ -49,9 +118,15 @@
 	</button>
 
 	<svelte:fragment slot="ornament">
-		<Button icon={mdiRestore} tooltip="Reset to step 0" />
+		{@const gpuIsComplete = isCompleteGpuStore($gpuStore)}
+		<Button icon={mdiRestore} tooltip="Reset to step 0" on:click={reset} />
 
-		<Button icon={mdiReiterate} tooltip="Step by {iterateStep}" />
+		<Button
+			disabled={!gpuIsComplete || $isLoading.loading}
+			icon={mdiReiterate}
+			tooltip="Step by {iterateStep}"
+			on:click={iterate}
+		/>
 
 		<input
 			type="number"
@@ -62,7 +137,14 @@
 
 		<div class="flex items-center mx-2 gap-1">
 			<div>z =</div>
-			<input type="range" class="block" style="accent-color: white" />
+			<input
+				min="0"
+				max={HYPERPARAMS.size - 1}
+				bind:value={sliceIndex}
+				type="range"
+				class="block"
+				style="accent-color: white"
+			/>
 		</div>
 
 		<div class="h-full w-0.5 bg-white/40 rounded-full" />
@@ -92,7 +174,7 @@
 					let:item
 				>
 					{item.steps}
-					<Button icon={mdiTrashCan} on:click={() => removePlayId(item.steps.id)} />
+					<Button icon={mdiTrashCan} on:click={() => removePlayId(item.id)} />
 				</SortableList>
 			</ol>
 
