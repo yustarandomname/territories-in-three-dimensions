@@ -27,15 +27,15 @@
 				context.beginPath();
 
 				if (!mayority) {
-					context.fillStyle = `rgb(${Math.round(
+					context.fillStyle = `rgba(${Math.round(
 						255 * (node.red_agents / totalNodes)
-					)}, 0, ${Math.round(255 * (node.blue_agents / totalNodes))})`;
+					)}, 0, ${Math.round(255 * (node.blue_agents / totalNodes))}, 0.9)`;
 				} else if (node.red_agents > node.blue_agents) {
-					context.fillStyle = `rgb(255, 0, 0)`;
-				} else if (mayority && node.blue_agents > node.red_agents) {
-					context.fillStyle = `rgb(0, 0, 255)`;
+					context.fillStyle = `rgba(255, 0, 0, 0.9)`;
+				} else if (node.blue_agents > node.red_agents) {
+					context.fillStyle = `rgba(0, 0, 255, 0.9)`;
 				} else {
-					context.fillStyle = `rgb(0, 255, 0)`;
+					context.fillStyle = `rgba(0, 255, 0, 0.9)`;
 				}
 
 				context.fillRect(boxSizeX * x, boxSizeY * y, boxSizeX, boxSizeY);

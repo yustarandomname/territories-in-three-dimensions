@@ -1,6 +1,19 @@
 <script>
+	import { mdiClose, mdiDotsHorizontal } from '@mdi/js';
+	import { createEventDispatcher } from 'svelte';
+	import { fly } from 'svelte/transition';
+	import Button from './Button.svelte';
+	import TabItem from './TabItem.svelte';
+
 	export let title = 'Window';
-	export let showSheet = false;
+	export let showSheet = true;
+
+	const dispatch = createEventDispatcher();
+
+	let tabs = ['Parameters', 'Agents', 'Settings'];
+	let selectedTab = tabs[0];
+
+	let showExpand = false;
 </script>
 
 <div class="pt-12 pb-24 aspect-square relative" style="max-width: 85vmin">
@@ -16,12 +29,58 @@
 
 		<!-- Ornament buttom -->
 		{#if $$slots.ornament}
-			<div class="-bottom-12 absolute flex justify-center w-full transform ornamentContainer">
-				<div
-					class="ornament bg-gray-400/40 hover:bg-gray-400/50 backdrop-blur-lg rounded-full flex p-3 gap-2"
-				>
-					<slot name="ornament" />
-				</div>
+			<div class="bottom-8 absolute w-full transform ornamentContainer">
+				{#if !showExpand}
+					<div
+						in:fly={{ y: 20, duration: 1000 }}
+						out:fly={{ y: -20, duration: 500 }}
+						class="ornament w-fit bg-gray-700/40 hover:bg-gray-700/50 backdrop-blur-lg rounded-full p-3 flex items-center gap-2"
+					>
+						<slot name="ornament" />
+
+						{#if $$slots.ornamentExpand}
+							<div class="h-8 w-0.5 bg-white/40 rounded-full" />
+
+							<Button
+								icon={mdiDotsHorizontal}
+								tooltip="Show more options"
+								on:click={() => (showExpand = true)}
+							/>
+						{/if}
+					</div>
+				{:else}
+					<div
+						on:mouseleave={() => (showExpand = false)}
+						in:fly={{ y: -20, duration: 750 }}
+						out:fly={{ y: 20, duration: 500 }}
+						style="border-radius: 2.5rem; min-width: 45rem;"
+						class="ornament p-8 pt-4 bg-gray-700/40 hover:bg-gray-700/50 backdrop-blur-lg relative"
+					>
+						<div class="absolute left-4 top-4">
+							<TabItem selected icon={mdiClose} on:click={() => (showExpand = false)} />
+						</div>
+
+						<div class="flex gap-2 justify-center mb-3">
+							{#each tabs as tab}
+								<TabItem selected={tab === selectedTab} on:click={() => (selectedTab = tab)}>
+									{tab}
+								</TabItem>
+							{/each}
+						</div>
+
+						<div class="absolute right-4 top-4">
+							<TabItem
+								selected
+								on:click={() => {
+									showExpand = false;
+									dispatch('saveSettings');
+								}}>Save settings</TabItem
+							>
+						</div>
+
+						<slot name="ornamentExpand" {selectedTab} />
+					</div>
+				{/if}
 			</div>
 		{/if}
 
@@ -53,7 +112,7 @@
 	</div>
 </div>
 
-<style>
+<style lang="postcss">
 	.ornamentContainer {
 		perspective: 10rem;
 	}
@@ -61,10 +120,18 @@
 	.ornament {
 		transition: all 0.3s ease-in-out;
 		transform-style: preserve-3d;
-		transform: rotateX(3deg);
+		transform: rotateX(3deg) translateX(-50%);
+		@apply absolute top-0 left-1/2;
+	}
+
+	:global(.dark) .ornament {
+		@apply bg-gray-400/40;
+		&:hover {
+			@apply bg-gray-400/50;
+		}
 	}
 
 	.ornamentContainer:hover > .ornament {
-		transform: rotateX(0deg);
+		transform: rotateX(0deg) translateX(-50%);
 	}
 </style>

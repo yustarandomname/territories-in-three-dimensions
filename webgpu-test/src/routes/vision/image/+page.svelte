@@ -1,27 +1,18 @@
 <script lang="ts">
-	import {
-		mdiArchive,
-		mdiChartLine,
-		mdiCube,
-		mdiDotsHorizontal,
-		mdiExport,
-		mdiImage,
-		mdiPlus,
-		mdiReiterate,
-		mdiRestore,
-		mdiShare,
-		mdiTrashCan
-	} from '@mdi/js';
-	import Button from '../components/Button.svelte';
-	import Window from '../components/Window.svelte';
-	import TabItem from '../components/TabItem.svelte';
-	import Sheet from '../components/Sheet.svelte';
-	import SortableList from '../components/SortableList.svelte';
+	import { mdiArchive, mdiChartLine, mdiImage, mdiPlus, mdiTrashCan } from '@mdi/js';
 	import { onMount } from 'svelte';
-	import { gpuStore, isCompleteGpuStore, isLoading } from '../gpuStore';
+	import { fly } from 'svelte/transition';
 	import { Universe } from '../../Universe';
 	import Canvas from '../../compute/Canvas.svelte';
-	import { fly } from 'svelte/transition';
+	import Button from '../components/Button.svelte';
+	import Sheet from '../components/Sheet.svelte';
+	import SortableList from '../components/SortableList.svelte';
+	import TabItem from '../components/TabItem.svelte';
+	import Window from '../components/Window.svelte';
+	import Input from '../components/Input.svelte';
+	import { gpuStore, isCompleteGpuStore, isLoading } from '../gpuStore';
+	import Ornament from './Ornament.svelte';
+	import DarkToggle from '../components/DarkToggle.svelte';
 
 	let autoPlayPanel = false;
 	let iterateStep = 1000;
@@ -60,17 +51,18 @@
 		gpuStore.reset();
 		HYPERPARAMS.iterations = 0;
 
+		if (HYPERPARAMS.total_agents != total_agents) {
+			total_agents = HYPERPARAMS.total_agents;
+			inputUniverse = new Universe(50, total_agents, 3);
+		}
+
 		await gpuStore.init();
 
 		const universeArray = new Float32Array(inputUniverse.to_f32_buffer());
 		await gpuStore.setup(HYPERPARAMS, universeArray);
 
 		if (!isCompleteGpuStore($gpuStore)) return;
-
-		console.log('gpuStore', $gpuStore.hyperparameters);
-
 		const resultArrays = await gpuStore.iterate(1);
-		console.log('resultArrays', resultArrays);
 
 		if (!resultArrays) return;
 
@@ -79,11 +71,9 @@
 
 	async function iterate() {
 		if (!isCompleteGpuStore($gpuStore)) return;
-
 		const resultArrays = await gpuStore.iterate(iterateStep);
 
 		if (!resultArrays) return;
-
 		outputUniverse = Universe.from_result(resultArrays.result, HYPERPARAMS.size, 3);
 	}
 
@@ -101,7 +91,7 @@
 	</div>
 {/if}
 
-<Window title="Iterations: {iterations}" showSheet={autoPlayPanel}>
+<Window title="Iterations: {iterations}" showSheet={autoPlayPanel} on:saveSettings={reset}>
 	{#if !outputUniverse}
 		<img alt="rendered version after n iterations" class="h-full w-full" src="/result.png" />
 	{:else}
@@ -118,45 +108,41 @@
 	</button>
 
 	<svelte:fragment slot="ornament">
-		{@const gpuIsComplete = isCompleteGpuStore($gpuStore)}
-		<Button icon={mdiRestore} tooltip="Reset to step 0" on:click={reset} />
-
-		<Button
-			disabled={!gpuIsComplete || $isLoading.loading}
-			icon={mdiReiterate}
-			tooltip="Step by {iterateStep}"
-			on:click={iterate}
-		/>
-
-		<input
-			type="number"
-			class="bg-transparent outline-none rounded text-center hover:bg-gray-200/20 active:bg-gray-200/20 w-16"
-			bind:value={iterateStep}
-		/>
-		<div class="h-full w-0.5 bg-white/40 rounded-full" />
-
-		<div class="flex items-center mx-2 gap-1">
-			<div>z =</div>
-			<input
-				min="0"
-				max={HYPERPARAMS.size - 1}
-				bind:value={sliceIndex}
-				type="range"
-				class="block"
-				style="accent-color: white"
-			/>
-		</div>
-
-		<div class="h-full w-0.5 bg-white/40 rounded-full" />
-
-		<Button disabled icon={mdiShare} tooltip="Copy url to this state" />
-		<Button disabled icon={mdiExport} tooltip="Export to database" />
-		<Button disabled icon={mdiCube} tooltip="Show model in 3D" />
-
-		<div class="h-full w-0.5 bg-white/40 rounded-full" />
-
-		<Button disabled icon={mdiDotsHorizontal} tooltip="Show more options" />
+		<Ornament bind:iterateStep bind:sliceIndex on:iterate={iterate} on:reset={reset} />
 	</svelte:fragment>
+
+	<div slot="ornamentExpand" let:selectedTab>
+		{#if selectedTab == 'Parameters'}
+			<div class="flex flex-wrap gap-4">
+				<Input
+					label="Beta"
+					input={HYPERPARAMS.beta.toExponential()}
+					bind:value={HYPERPARAMS.beta}
+				/>
+				<Input label="Gamma" input={HYPERPARAMS.gamma.toString()} bind:value={HYPERPARAMS.gamma} />
+				<Input
+					label="Lambda"
+					input={HYPERPARAMS.lambda.toString()}
+					bind:value={HYPERPARAMS.lambda}
+				/>
+				<Input label="Seed" input={HYPERPARAMS.lambda.toString()} bind:value={HYPERPARAMS.lambda} />
+			</div>
+		{:else if selectedTab == 'Agents'}
+			<div class="flex flex-wrap gap-4">
+				<Input label="Species" input="2" value={2} />
+				<div class="flex items-center">
+					<Input
+						label="Agents / species"
+						input={HYPERPARAMS.total_agents.toString()}
+						bind:value={HYPERPARAMS.total_agents}
+					/>
+					<p class="ml-2">{HYPERPARAMS.total_agents / HYPERPARAMS.size ** 3} per cell</p>
+				</div>
+			</div>
+		{:else}
+			<DarkToggle />
+		{/if}
+	</div>
 
 	<svelte:fragment slot="tabGroup">
 		<TabItem selected icon={mdiImage} tooltip="Image" />
