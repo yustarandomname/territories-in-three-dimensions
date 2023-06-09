@@ -4,6 +4,7 @@
 
 	type OrderParams = { iter: number; result: number }[];
 	export let orderParams: OrderParams;
+	export let id: string;
 	let canvasEl: HTMLCanvasElement;
 
 	function setupChart(canvasEl: HTMLCanvasElement, orderParams: OrderParams) {
@@ -36,5 +37,5 @@
 </script>
 
 <div class="h-64 w64 flex justify-center mt-12">
-	<canvas bind:this={canvasEl} />
+	<canvas {id} bind:this={canvasEl} />
 </div>

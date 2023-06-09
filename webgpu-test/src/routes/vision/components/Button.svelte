@@ -5,11 +5,13 @@
 	export let tooltip: string = '';
 	export let disabled: boolean = false;
 	export let selected: boolean = false;
+	export let dark: boolean = false;
 </script>
 
 <button
-	class="p-3 disabled:opacity-70 enabled:hover:bg-gray-200/20 enabled:hover:scale-105 transition-all rounded-full relative"
+	class="p-3 disabled:opacity-70 enabled:hover:scale-105 transition-all rounded-full relative"
 	class:selected
+	class:dark
 	{disabled}
 	on:click
 >
@@ -29,11 +31,27 @@
 </button>
 
 <style lang="postcss">
+	button:not(:disabled):hover {
+		@apply bg-gray-200/20;
+	}
+
 	button:not(:disabled):hover > .tooltip {
 		opacity: 1;
 	}
 
-	button:not(:disabled, :hover).selected {
+	button:not(:disabled).selected {
 		@apply bg-gray-200/20;
+
+		&:hover {
+			@apply bg-gray-200/30;
+		}
+	}
+
+	button:not(:disabled).dark {
+		@apply bg-gray-700/20;
+
+		&:hover {
+			@apply bg-gray-700/30;
+		}
 	}
 </style>

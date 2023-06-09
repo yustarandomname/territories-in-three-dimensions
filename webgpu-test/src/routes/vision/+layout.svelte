@@ -75,6 +75,7 @@
 		if (!isCompleteGpuStore($gpuStore)) return;
 		const resultArrays = await gpuStore.iterate(1);
 
+		layoutData.orderParams.set([]);
 		handleResultArray(resultArrays);
 	}
 
@@ -110,7 +111,7 @@
 	class="background h-full w-full text-white flex justify-center items-center"
 	class:dark={$settingStore.darkMode}
 >
-	<Window title="Iterations: {iterations}" on:saveSettings={reset}>
+	<Window path={data.path} title="Iterations: {iterations}" on:saveSettings={reset}>
 		<slot />
 
 		<svelte:fragment slot="ornament">

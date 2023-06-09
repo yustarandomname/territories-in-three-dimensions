@@ -7,6 +7,7 @@
 	export let sliceIndex: number = 0;
 	export let offset: number = 0;
 	export let mayority: boolean = false;
+	export let id = 'canvas';
 
 	function range(from: number, to: number, step: number = 1) {
 		return Array.from({ length: to - from }, (_, i) => from + i * step);
@@ -45,7 +46,7 @@
 	};
 </script>
 
-<div class="w-full h-full flex justify-center items-center">
+<div {id} class="w-full h-full flex justify-center items-center">
 	<Canvas class="w-full" height={640}>
 		<Layer {render} />
 	</Canvas>

@@ -33,6 +33,7 @@
 	"type": "module",
 	"dependencies": {
 		"@mdi/js": "^7.2.96",
+		"@supabase/supabase-js": "^2.24.0",
 		"@types/seedrandom": "^3.0.5",
 		"@webgpu/types": "^0.1.32",
 		"chart.js": "^4.3.0",

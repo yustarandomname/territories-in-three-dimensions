@@ -4,6 +4,7 @@
 	import Chart from 'chart.js/auto';
 
 	export let nodes: Node[];
+	export let id: string;
 	let canvasEl: HTMLCanvasElement;
 	let chart: Chart | null = null;
 
@@ -48,5 +49,5 @@
 </script>
 
 <div class="h-64 w64 flex justify-center mt-12">
-	<canvas bind:this={canvasEl} />
+	<canvas {id} bind:this={canvasEl} />
 </div>

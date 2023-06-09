@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { mdiClose, mdiDotsHorizontal } from '@mdi/js';
 	import { createEventDispatcher } from 'svelte';
 	import { fly } from 'svelte/transition';
@@ -6,6 +6,7 @@
 	import TabItem from './TabItem.svelte';
 
 	export let title = 'Window';
+	export let path: String | undefined;
 
 	const dispatch = createEventDispatcher();
 
@@ -15,7 +16,11 @@
 	let showExpand = false;
 </script>
 
-<div class="pt-12 pb-24 aspect-square relative" style="max-width: 85vmin">
+<div
+	class:side={path == 'charts'}
+	class="pt-12 pb-24 aspect-square absolute transition-transform duration-500"
+	style="max-width: 85vmin"
+>
 	<div class="relative bg-slate-200/80 rounded-3xl">
 		<!-- Title items -->
 
@@ -25,7 +30,7 @@
 
 		<!-- Ornament buttom -->
 		{#if $$slots.ornament}
-			<div class=" bottom-8 absolute w-full transform ornamentContainer">
+			<div class="z-[100] bottom-8 absolute w-full transform ornamentContainer">
 				{#if !showExpand}
 					<div
 						in:fly={{ y: 20, duration: 1000 }}
@@ -99,6 +104,10 @@
 </div>
 
 <style lang="postcss">
+	.side {
+		@apply -translate-x-60;
+	}
+
 	.ornamentContainer {
 		perspective: 10rem;
 	}
