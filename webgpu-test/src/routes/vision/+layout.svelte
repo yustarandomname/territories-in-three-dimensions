@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { mdiArchive, mdiChartLine, mdiImage } from '@mdi/js';
-	import { onMount } from 'svelte';
-	import { setContext } from 'svelte';
+	import { onMount, setContext } from 'svelte';
+	import { fly } from 'svelte/transition';
+	import type { LayoutData } from './$types';
 	import { Universe } from './../Universe';
 	import Ornament from './Ornament.svelte';
 	import DarkToggle from './components/DarkToggle.svelte';
 	import Input from './components/Input.svelte';
 	import TabItem from './components/TabItem.svelte';
 	import Window from './components/Window.svelte';
-	import { gpuStore, isCompleteGpuStore } from './gpuStore';
+	import { gpuStore, hasError, isCompleteGpuStore, isLoading } from './gpuStore';
 	import { layoutData } from './layoutData';
 	import { settingStore } from './settingStore';
-	import type { LayoutData } from './$types';
 
 	export let data: LayoutData;
 
@@ -44,6 +44,20 @@
 
 	$: iterations = (isCompleteGpuStore($gpuStore) ? $gpuStore?.hyperparameters?.iterations : 0) || 0;
 
+	type ResultArrays = { result: Float32Array; orderResult: Float32Array };
+
+	function handleResultArray(resultArrays: ResultArrays | undefined) {
+		if (!resultArrays) return;
+
+		outputUniverse = Universe.from_result(resultArrays.result, HYPERPARAMS.size, 3);
+		layoutData.outputUniverse.set(outputUniverse);
+
+		layoutData.orderParams.update((array) => {
+			const result = resultArrays.orderResult[0];
+			return [...array, { iter: iterations, result }];
+		});
+	}
+
 	async function reset() {
 		gpuStore.reset();
 		HYPERPARAMS.iterations = 0;
@@ -61,25 +75,36 @@
 		if (!isCompleteGpuStore($gpuStore)) return;
 		const resultArrays = await gpuStore.iterate(1);
 
-		if (!resultArrays) return;
-
-		outputUniverse = Universe.from_result(resultArrays.result, HYPERPARAMS.size, 3);
-		layoutData.outputUniverse.set(outputUniverse);
+		handleResultArray(resultArrays);
 	}
 
 	async function iterate() {
 		if (!isCompleteGpuStore($gpuStore)) return;
 		const resultArrays = await gpuStore.iterate(iterateStep);
 
-		if (!resultArrays) return;
-		outputUniverse = Universe.from_result(resultArrays.result, HYPERPARAMS.size, 3);
-		layoutData.outputUniverse.set(outputUniverse);
+		handleResultArray(resultArrays);
 	}
 
 	onMount(async () => {
 		await reset();
 	});
 </script>
+
+{#if $hasError.hasError}
+	<div
+		transition:fly={{ y: -10 }}
+		class="absolute left-1/2 -translate-x-1/2 w-60 text-center top-12 bg-red-300/80 px-4 py-6 backdrop:blur-lg rounded-lg"
+	>
+		{$hasError.message || 'error'}
+	</div>
+{:else if $isLoading.loading}
+	<div
+		transition:fly={{ y: -10 }}
+		class="absolute left-1/2 -translate-x-1/2 w-60 text-center top-12 bg-slate-300/80 px-4 py-6 backdrop:blur-lg rounded-lg"
+	>
+		{$isLoading.message}
+	</div>
+{/if}
 
 <div
 	class="background h-full w-full text-white flex justify-center items-center"
@@ -118,14 +143,17 @@
 				</div>
 			{:else if selectedTab == 'Agents'}
 				<div class="flex flex-wrap gap-4">
-					<Input label="Species" input="2" value={2} />
-					<div class="flex items-center">
+					<div class="flex items-center gap-2">
+						<Input label="Species" input="2" value={2} />
+						<p>(Work in Progress)</p>
+					</div>
+					<div class="flex items-center gap-2">
 						<Input
 							label="Agents / species"
 							input={HYPERPARAMS.total_agents.toString()}
 							bind:value={HYPERPARAMS.total_agents}
 						/>
-						<p class="ml-2">{HYPERPARAMS.total_agents / HYPERPARAMS.size ** 3} per cell</p>
+						<p>{HYPERPARAMS.total_agents / HYPERPARAMS.size ** 3} per cell</p>
 					</div>
 				</div>
 			{:else}

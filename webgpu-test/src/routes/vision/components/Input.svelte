@@ -25,7 +25,7 @@
 	<input
 		bind:value={input}
 		on:keyup={handleKeydown}
-		class="px-3 py-2 ml-2 rounded-lg bg-gray-400/50 hover:bg-gray-300/50 active:bg-gray-300/50 transition-colors"
+		class="px-3 py-2 ml-2 w-60 rounded-lg bg-gray-400/50 hover:bg-gray-300/50 active:bg-gray-300/50 transition-colors"
 		class:error
 	/>
 </label>

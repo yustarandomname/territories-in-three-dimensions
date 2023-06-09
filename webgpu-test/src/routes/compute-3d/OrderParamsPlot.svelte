@@ -2,18 +2,18 @@
 	import type { Node } from '../Universe';
 	import Chart, { type ChartData } from 'chart.js/auto';
 
-	type OrderParams = { x: number; y: number }[];
+	type OrderParams = { iter: number; result: number }[];
 	export let orderParams: OrderParams;
 	let canvasEl: HTMLCanvasElement;
 
 	function setupChart(canvasEl: HTMLCanvasElement, orderParams: OrderParams) {
 		const data = {
-			labels: orderParams.map(({ x, y }) => x),
+			labels: orderParams.map(({ iter, result }) => iter),
 			datasets: [
 				{
 					label: 'Order parameter over time',
 					borderColor: 'rgba(255,99,132,1)',
-					data: orderParams.map(({ x, y }) => y)
+					data: orderParams.map(({ iter, result }) => result)
 				}
 			]
 		};
@@ -32,7 +32,7 @@
 		});
 	}
 
-	$: if (canvasEl) setupChart(canvasEl, orderParams);
+	$: if (canvasEl && orderParams) setupChart(canvasEl, orderParams);
 </script>
 
 <div class="h-64 w64 flex justify-center mt-12">
