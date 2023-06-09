@@ -88,7 +88,7 @@
 			pass.end();
 		}
 
-		// // Calculate order parameter
+		// Calculate order parameter
 		const pass = encoder.beginComputePass();
 		pass.setPipeline(pipelines['calculate_order_param'].pipeline);
 		pass.setBindGroup(0, pipelines['calculate_order_param'].bindGroups[HYPERPARAMS.iterations % 2]);

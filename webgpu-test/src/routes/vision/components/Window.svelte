@@ -6,7 +6,6 @@
 	import TabItem from './TabItem.svelte';
 
 	export let title = 'Window';
-	export let showSheet = true;
 
 	const dispatch = createEventDispatcher();
 
@@ -17,19 +16,16 @@
 </script>
 
 <div class="pt-12 pb-24 aspect-square relative" style="max-width: 85vmin">
-	<div class="relative">
+	<div class="relative bg-slate-200/80 rounded-3xl">
 		<!-- Title items -->
-		<div class="absolute flex justify-between w-full p-4 top-0 items-center">
-			<div class="rounded-xl p-3 bg-gray-400/50 backdrop-blur-lg">
-				<h1 class="text-lg font-bold text-white-200">{title}</h1>
-			</div>
 
-			<slot name="topTrailing" />
+		<div class="absolute top-0 m-4 rounded-xl p-3 bg-gray-400/50 backdrop-blur-lg">
+			<h1 class="text-lg font-bold text-white-200">{title}</h1>
 		</div>
 
 		<!-- Ornament buttom -->
 		{#if $$slots.ornament}
-			<div class="bottom-8 absolute w-full transform ornamentContainer">
+			<div class=" bottom-8 absolute w-full transform ornamentContainer">
 				{#if !showExpand}
 					<div
 						in:fly={{ y: 20, duration: 1000 }}
@@ -54,10 +50,10 @@
 						in:fly={{ y: -20, duration: 750 }}
 						out:fly={{ y: 20, duration: 500 }}
 						style="border-radius: 2.5rem; min-width: 45rem;"
-						class="ornament p-8 pt-4 bg-gray-700/40 hover:bg-gray-700/50 backdrop-blur-lg relative"
+						class="ornament p-8 pt-4 bg-gray-700/40 hover:bg-gray-700/50 -mt-4 backdrop-blur-lg relative"
 					>
 						<div class="absolute left-4 top-4">
-							<TabItem selected icon={mdiClose} on:click={() => (showExpand = false)} />
+							<Button selected icon={mdiClose} on:click={() => (showExpand = false)} />
 						</div>
 
 						<div class="flex gap-2 justify-center mb-3">
@@ -69,12 +65,12 @@
 						</div>
 
 						<div class="absolute right-4 top-4">
-							<TabItem
+							<Button
 								selected
 								on:click={() => {
 									showExpand = false;
 									dispatch('saveSettings');
-								}}>Save settings</TabItem
+								}}>Save settings</Button
 							>
 						</div>
 
@@ -88,20 +84,10 @@
 		{#if $$slots.tabGroup}
 			<div class="-left-12 absolute flex h-full flex-col justify-center">
 				<div
-					class="tabGroup bg-gray-400/60 backdrop-blur-lg h-fit rounded-full flex flex-col py-3 px-2 gap-2"
+					class="tabGroup bg-gray-600/60 hover:bg-gray-600/70 transition-colors backdrop-blur-lg h-fit rounded-full flex flex-col py-3 px-2 gap-2"
 				>
 					<slot name="tabGroup" />
 				</div>
-			</div>
-		{/if}
-
-		<!-- Sheet -->
-		{#if $$slots.sheet && showSheet}
-			<div
-				style="min-width: 20rem; min-height: 20rem;"
-				class="absolute bg-gray-600/80 backdrop-blur-3xl rounded-xl top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 p-4"
-			>
-				<slot name="sheet" />
 			</div>
 		{/if}
 
@@ -120,8 +106,30 @@
 	.ornament {
 		transition: all 0.3s ease-in-out;
 		transform-style: preserve-3d;
-		transform: rotateX(3deg) translateX(-50%);
+		transform: rotateX(5deg) translateX(-50%);
+		box-shadow: -1px -2px 1px 0px rgba(255, 255, 255, 0.1);
 		@apply absolute top-0 left-1/2;
+		&:hover {
+			box-shadow: -1px -2px 1px 0px rgba(255, 255, 255, 0.3);
+		}
+	}
+
+	.tabGroup {
+		transition: box-shadow 0.3s ease-in-out;
+
+		box-shadow: -1px -2px 1px 0px rgba(255, 255, 255, 0.5), 2px 3px 10px 3px rgba(50, 50, 50, 0.5);
+
+		&:hover {
+			box-shadow: -1px -2px 1px 0px rgba(255, 255, 255, 0.4),
+				2px 3px 20px 10px rgba(50, 50, 50, 0.3);
+		}
+	}
+
+	:global(.dark) .tabGroup {
+		@apply bg-gray-400/60;
+		&:hover {
+			@apply bg-gray-400/70;
+		}
 	}
 
 	:global(.dark) .ornament {

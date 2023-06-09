@@ -4,10 +4,12 @@
 	export let icon: string = '';
 	export let tooltip: string = '';
 	export let disabled: boolean = false;
+	export let selected: boolean = false;
 </script>
 
 <button
 	class="p-3 disabled:opacity-70 enabled:hover:bg-gray-200/20 enabled:hover:scale-105 transition-all rounded-full relative"
+	class:selected
 	{disabled}
 	on:click
 >
@@ -26,8 +28,12 @@
 	{/if}
 </button>
 
-<style>
+<style lang="postcss">
 	button:not(:disabled):hover > .tooltip {
 		opacity: 1;
+	}
+
+	button:not(:disabled, :hover).selected {
+		@apply bg-gray-200/20;
 	}
 </style>

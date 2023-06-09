@@ -3,14 +3,14 @@
 
 	export let icon: string = '';
 	export let tooltip: string = '';
-	export let disabled: boolean = false;
+	export let href: string = '';
 	export let selected: boolean = false;
 </script>
 
-<button
-	class="p-3 disabled:opacity-70 enabled:hover:bg-gray-200/40 enabled:hover:scale-105 transition-all rounded-full relative"
+<a
+	class="p-3 disabled:opacity-70 hover:bg-gray-200/40 hover:scale-105 transition-all rounded-full relative"
 	class:selected
-	{disabled}
+	{href}
 	on:click
 >
 	<slot>
@@ -26,14 +26,14 @@
 			{tooltip}
 		</div>
 	{/if}
-</button>
+</a>
 
 <style lang="postcss">
-	button:not(:disabled):hover > .tooltip {
+	a:hover > .tooltip {
 		opacity: 1;
 	}
 
-	button:not(:disabled, :hover).selected {
+	a:not(:hover).selected {
 		@apply bg-gray-200/20;
 	}
 </style>

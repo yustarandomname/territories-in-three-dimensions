@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { mdiCube, mdiReiterate, mdiRestore, mdiShare, mdiUpload } from '@mdi/js';
 	import { createEventDispatcher } from 'svelte';
-	import Button from '../components/Button.svelte';
-	import { gpuStore, isCompleteGpuStore, isLoading } from '../gpuStore';
+	import Button from './components/Button.svelte';
+	import { gpuStore, isCompleteGpuStore, isLoading } from './gpuStore';
 
 	export let iterateStep: number = 1000;
 	export let sliceIndex: number = 0;
