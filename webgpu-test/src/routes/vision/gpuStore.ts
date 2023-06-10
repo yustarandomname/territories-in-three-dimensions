@@ -82,7 +82,7 @@ function createGpuStore() {
             }
 
             const hyperparamsArray = new Float32Array(Object.values(hyperparams));
-            const gpuSetup = await setup(gpuDevice, { hyperparamsArray, universeArray })
+            const gpuSetup = await setup(gpuDevice, { hyperparamsArray, universeArray }, hyperparams)
 
             await update(gpuStore => {
                 if (!gpuStore.device) return gpuStore;

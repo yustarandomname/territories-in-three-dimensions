@@ -53,7 +53,9 @@
 		layoutData.outputUniverse.set(outputUniverse);
 
 		layoutData.orderParams.update((array) => {
-			const result = resultArrays.orderResult[0];
+			// Sum of all order parameters for all cells
+			const result = [...resultArrays.orderResult].reduce((acc, val) => acc + val, 0);
+
 			return [...array, { iter: iterations, result }];
 		});
 	}

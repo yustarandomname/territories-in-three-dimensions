@@ -30,7 +30,7 @@ const workgroup_size = 100;
 @group(0) @binding(3) var<storage, read_write> red_agents_out: array<array<f32, 6>>;
 @group(0) @binding(4) var<storage, read_write> blue_agents_out: array<array<f32, 6>>;
 
-@group(0) @binding(5) var<storage, read_write> order_parameter_out: f32;
+@group(0) @binding(5) var<storage, read_write> order_parameter_out: array<f32>;
 
 fn taus_step(z: u32, S1: u32, S2: u32, S3: u32, M: u32) -> u32 {
     let b = (((z << S1) ^ z) >> S2);
@@ -203,8 +203,6 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
     total_blue_agents += blue_agents_out[neighbour_index[4]][1]; // Move all blue agents from left neightbour to this cell
     total_blue_agents += blue_agents_out[neighbour_index[5]][2]; // Move all blue agents from back neightbour to this cell
     state_out[i].blue_agents = total_blue_agents;
-
-    order_parameter_out = 0.0;
 }
 
 @compute @workgroup_size(workgroup_size) fn calculate_order_param(
@@ -228,10 +226,10 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
     var delta_rho_neighbours = 0.0;
     for (var ai: u32 = 0; ai < u32(neighbours); ai++) {
         let neighbour_index = neighbour_indeces[ai];
-        let neighbour_rho_red = state_out[neighbour_index].red_agents * total_size;
+        let neighbour_rho_red = state_out[neighbour_index].red_agents * total_size; 
         let neighbour_rho_blue = state_out[neighbour_index].blue_agents * total_size;
         delta_rho_neighbours += neighbour_rho_red - neighbour_rho_blue;
     }    
     
-    order_parameter_out += norm_factor * delta_rho * delta_rho_neighbours;
+    order_parameter_out[i] = norm_factor * delta_rho * delta_rho_neighbours;
 }

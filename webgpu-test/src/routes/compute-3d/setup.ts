@@ -1,3 +1,4 @@
+import type { HyperParameters } from '../vision/gpuStore';
 import computeShader from './computeShader3d.wgsl?raw';
 
 type PipelineNames = "update_graffiti_and_push_strength" | "move_agents_out" | "move_agents_in" | "calculate_order_param";
@@ -21,11 +22,13 @@ export type GpuSetup = {
 }
 
 
-export default async function setup(device: GPUDevice, buffers: InputBuffers): Promise<GpuSetup> {
+export default async function setup(device: GPUDevice, buffers: InputBuffers, hyperparameters: HyperParameters): Promise<GpuSetup> {
     const module = device.createShaderModule({
         label: 'compute module',
         code: computeShader
     });
+
+    const total_size = Math.pow(hyperparameters.size, 3);
 
     const input = buffers.universeArray;
 
@@ -55,7 +58,7 @@ export default async function setup(device: GPUDevice, buffers: InputBuffers): P
     // Copy our input data to that the first buffer
     device.queue.writeBuffer(cellStateStorage[0], 0, input);
 
-    const agentsOutArray = new Float32Array(input.length * 6);
+    const agentsOutArray = new Float32Array(input.length); // TODO: This might not be the right size
     // Create a buffer for storing the amount of agents moving out
     const agentsOutBuffers = [
         device.createBuffer({
@@ -70,7 +73,7 @@ export default async function setup(device: GPUDevice, buffers: InputBuffers): P
         })
     ] as const;
     device.queue.writeBuffer(agentsOutBuffers[0], 0, agentsOutArray);
-    device.queue.writeBuffer(agentsOutBuffers[1], 0, new Float32Array(input.length * 6));
+    device.queue.writeBuffer(agentsOutBuffers[1], 0, new Float32Array(input.length));
 
     // create a buffer on the GPU to get a copy of the results
     const resultBuffer = device.createBuffer({
@@ -80,15 +83,16 @@ export default async function setup(device: GPUDevice, buffers: InputBuffers): P
     });
 
     // create a buffer on the GPU to get the current order parameter
+    const orderArray = new Float32Array(total_size);
     const orderBuffer = device.createBuffer({
         label: 'order buffer',
-        size: Float32Array.BYTES_PER_ELEMENT,
+        size: orderArray.byteLength,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC
     });
 
     const orderResultBuffer = device.createBuffer({
         label: 'order result buffer',
-        size: Float32Array.BYTES_PER_ELEMENT,
+        size: orderArray.byteLength,
         usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
     });
 
