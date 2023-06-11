@@ -12,6 +12,7 @@
 	import { gpuStore, hasError, isCompleteGpuStore, isLoading } from './gpuStore';
 	import { layoutData } from './layoutData';
 	import { settingStore } from './settingStore';
+	import Button from './components/Button.svelte';
 
 	export let data: LayoutData;
 
@@ -89,6 +90,8 @@
 	}
 
 	onMount(async () => {
+		settingStore.setup();
+
 		await reset();
 	});
 </script>
@@ -109,73 +112,79 @@
 	</div>
 {/if}
 
-<div
-	class="background h-full w-full text-white flex justify-center items-center"
-	class:dark={$settingStore.darkMode}
->
-	<Window path={data.path} title="Iterations: {iterations}" on:saveSettings={reset}>
-		<slot />
+{#if $hasError.hasError}
+	<div
+		class="background h-full w-full text-white flex justify-center items-center"
+		class:dark={$settingStore.darkMode == 'dark'}
+	>
+		<Window path={data.path} title="Iterations: {iterations}" on:saveSettings={reset}>
+			<slot />
 
-		<svelte:fragment slot="ornament">
-			<Ornament bind:iterateStep bind:sliceIndex on:iterate={iterate} on:reset={reset} />
-		</svelte:fragment>
+			<svelte:fragment slot="ornament">
+				<Ornament bind:iterateStep bind:sliceIndex on:iterate={iterate} on:reset={reset} />
+			</svelte:fragment>
 
-		<div slot="ornamentExpand" let:selectedTab>
-			{#if selectedTab == 'Parameters'}
-				<div class="flex flex-wrap gap-4">
-					<Input
-						label="Beta"
-						input={HYPERPARAMS.beta.toExponential()}
-						bind:value={HYPERPARAMS.beta}
-					/>
-					<Input
-						label="Gamma"
-						input={HYPERPARAMS.gamma.toString()}
-						bind:value={HYPERPARAMS.gamma}
-					/>
-					<Input
-						label="Lambda"
-						input={HYPERPARAMS.lambda.toString()}
-						bind:value={HYPERPARAMS.lambda}
-					/>
-					<Input
-						label="Seed"
-						input={HYPERPARAMS.lambda.toString()}
-						bind:value={HYPERPARAMS.lambda}
-					/>
-				</div>
-			{:else if selectedTab == 'Agents'}
-				<div class="flex flex-wrap gap-4">
-					<div class="flex items-center gap-2">
-						<Input label="Species" input="2" value={2} />
-						<p>(Work in Progress)</p>
-					</div>
-					<div class="flex items-center gap-2">
+			<div slot="ornamentExpand" let:selectedTab>
+				{#if selectedTab == 'Parameters'}
+					<div class="flex flex-wrap gap-4">
 						<Input
-							label="Agents / species"
-							input={HYPERPARAMS.total_agents.toString()}
-							bind:value={HYPERPARAMS.total_agents}
+							label="Beta"
+							input={HYPERPARAMS.beta.toExponential()}
+							bind:value={HYPERPARAMS.beta}
 						/>
-						<p>{HYPERPARAMS.total_agents / HYPERPARAMS.size ** 3} per cell</p>
+						<Input
+							label="Gamma"
+							input={HYPERPARAMS.gamma.toString()}
+							bind:value={HYPERPARAMS.gamma}
+						/>
+						<Input
+							label="Lambda"
+							input={HYPERPARAMS.lambda.toString()}
+							bind:value={HYPERPARAMS.lambda}
+						/>
+						<Input
+							label="Seed"
+							input={HYPERPARAMS.lambda.toString()}
+							bind:value={HYPERPARAMS.lambda}
+						/>
 					</div>
-				</div>
-			{:else}
-				<DarkToggle />
-			{/if}
-		</div>
+				{:else if selectedTab == 'Agents'}
+					<div class="flex flex-wrap gap-4">
+						<div class="flex items-center gap-2">
+							<Input label="Species" input="2" value={2} />
+							<p>(Work in Progress)</p>
+						</div>
+						<div class="flex items-center gap-2">
+							<Input
+								label="Agents / species"
+								input={HYPERPARAMS.total_agents.toString()}
+								bind:value={HYPERPARAMS.total_agents}
+							/>
+							<p>{HYPERPARAMS.total_agents / HYPERPARAMS.size ** 3} per cell</p>
+						</div>
+					</div>
+				{:else}
+					<DarkToggle />
+					<div class="flex items-center gap-4 mt-2">
+						<p>Reset:</p>
+						<Button selected on:click={() => settingStore.reset()}>Reset settings</Button>
+					</div>
+				{/if}
+			</div>
 
-		<svelte:fragment slot="tabGroup">
-			{#each tabs as tab}
-				<TabItem
-					selected={data.path == tab.name.toLowerCase()}
-					href="/vision/{tab.name.toLowerCase()}"
-					icon={tab.icon}
-					tooltip={tab.name}
-				/>
-			{/each}
-		</svelte:fragment>
-	</Window>
-</div>
+			<svelte:fragment slot="tabGroup">
+				{#each tabs as tab}
+					<TabItem
+						selected={data.path == tab.name.toLowerCase()}
+						href="/vision/{tab.name.toLowerCase()}"
+						icon={tab.icon}
+						tooltip={tab.name}
+					/>
+				{/each}
+			</svelte:fragment>
+		</Window>
+	</div>
+{/if}
 
 <style lang="postcss">
 	.background {
@@ -200,5 +209,11 @@
 
 	.dark.background::before {
 		opacity: 0;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.background::before {
+			opacity: 0;
+		}
 	}
 </style>

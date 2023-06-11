@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { mdiClose, mdiDotsHorizontal } from '@mdi/js';
+	import { mdiClose, mdiTune } from '@mdi/js';
 	import { createEventDispatcher } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import Button from './Button.svelte';
@@ -43,7 +43,7 @@
 							<div class="h-8 w-0.5 bg-white/40 rounded-full" />
 
 							<Button
-								icon={mdiDotsHorizontal}
+								icon={mdiTune}
 								tooltip="Show more options"
 								on:click={() => (showExpand = true)}
 							/>
@@ -150,5 +150,21 @@
 
 	.ornamentContainer:hover > .ornament {
 		transform: rotateX(0deg) translateX(-50%);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.tabGroup {
+			@apply bg-gray-400/60;
+			&:hover {
+				@apply bg-gray-400/70;
+			}
+		}
+
+		.ornament {
+			@apply bg-gray-400/40;
+			&:hover {
+				@apply bg-gray-400/50;
+			}
+		}
 	}
 </style>
