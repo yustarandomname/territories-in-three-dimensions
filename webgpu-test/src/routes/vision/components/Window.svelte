@@ -153,14 +153,14 @@
 	}
 
 	@media (prefers-color-scheme: dark) {
-		.tabGroup {
+		:global(.auto) .tabGroup {
 			@apply bg-gray-400/60;
 			&:hover {
 				@apply bg-gray-400/70;
 			}
 		}
 
-		.ornament {
+		:global(.auto) .ornament {
 			@apply bg-gray-400/40;
 			&:hover {
 				@apply bg-gray-400/50;

@@ -115,6 +115,7 @@
 <div
 	class="background h-full w-full text-white flex justify-center items-center"
 	class:dark={$settingStore.darkMode == 'dark'}
+	class:auto={$settingStore.darkMode == 'auto'}
 >
 	{#if !$hasError.hasError}
 		<Window path={data.path} title="Iterations: {iterations}" on:saveSettings={reset}>
@@ -212,7 +213,7 @@
 	}
 
 	@media (prefers-color-scheme: dark) {
-		.background::before {
+		.auto.background::before {
 			opacity: 0;
 		}
 	}
