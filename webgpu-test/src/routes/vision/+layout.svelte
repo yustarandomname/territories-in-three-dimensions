@@ -112,11 +112,11 @@
 	</div>
 {/if}
 
-{#if $hasError.hasError}
-	<div
-		class="background h-full w-full text-white flex justify-center items-center"
-		class:dark={$settingStore.darkMode == 'dark'}
-	>
+<div
+	class="background h-full w-full text-white flex justify-center items-center"
+	class:dark={$settingStore.darkMode == 'dark'}
+>
+	{#if !$hasError.hasError}
 		<Window path={data.path} title="Iterations: {iterations}" on:saveSettings={reset}>
 			<slot />
 
@@ -183,8 +183,8 @@
 				{/each}
 			</svelte:fragment>
 		</Window>
-	</div>
-{/if}
+	{/if}
+</div>
 
 <style lang="postcss">
 	.background {
