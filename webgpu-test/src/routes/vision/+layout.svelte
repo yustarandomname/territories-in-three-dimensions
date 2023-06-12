@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { mdiArchive, mdiChartLine, mdiImage } from '@mdi/js';
+	import { mdiArchive, mdiChartLine, mdiCube, mdiImage } from '@mdi/js';
 	import { onMount, setContext } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import type { LayoutData } from './$types';
@@ -25,9 +25,10 @@
 	let outputUniverse: Universe;
 
 	let tabs = [
-		{ name: 'Image', icon: mdiImage },
-		{ name: 'Charts', icon: mdiChartLine },
-		{ name: 'Archive', icon: mdiArchive }
+		{ name: '2D Slice', icon: mdiImage, url: 'slice' },
+		{ name: '3D view', icon: mdiCube, url: '3d' },
+		{ name: 'Charts', icon: mdiChartLine, url: 'charts' },
+		{ name: 'Archive', icon: mdiArchive, url: 'archive' }
 	];
 
 	export const HYPERPARAMS = {
@@ -183,8 +184,8 @@
 			<svelte:fragment slot="tabGroup">
 				{#each tabs as tab}
 					<TabItem
-						selected={data.path == tab.name.toLowerCase()}
-						href="/vision/{tab.name.toLowerCase()}"
+						selected={data.path == tab.url}
+						href="/vision/{tab.url}"
 						icon={tab.icon}
 						tooltip={tab.name}
 					/>

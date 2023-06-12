@@ -8,7 +8,7 @@
 	import SortableList from '../components/SortableList.svelte';
 	import { gpuStore, isCompleteGpuStore } from '../gpuStore';
 	import type { LayoutData } from '../layoutData';
-	import Canvas from './../../compute/Canvas.svelte';
+	import Canvas from '../../compute/Canvas.svelte';
 
 	const { outputUniverse, HYPERPARAMS, sliceIndex, iterateStep } =
 		getContext<LayoutData>('layoutData');

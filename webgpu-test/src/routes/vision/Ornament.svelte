@@ -52,4 +52,3 @@
 
 <Button disabled icon={mdiShare} tooltip="Copy url to this state" />
 <Button icon={mdiUpload} on:click={uploadResult} tooltip="Export to database" />
-<Button disabled icon={mdiCube} tooltip="Show model in 3D" />
