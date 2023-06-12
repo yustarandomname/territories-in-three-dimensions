@@ -10,6 +10,14 @@
 	$: gpuIsComplete = isCompleteGpuStore($gpuStore);
 
 	const dispatch = createEventDispatcher();
+
+	function uploadResult() {
+		isLoading.set('Uploading result to database');
+
+		setTimeout(() => {
+			isLoading.reset();
+		}, 1000);
+	}
 </script>
 
 <Button icon={mdiRestore} tooltip="Reset to step 0" on:click={() => dispatch('reset')} />
@@ -43,5 +51,5 @@
 <div class="h-full w-0.5 bg-white/40 rounded-full" />
 
 <Button disabled icon={mdiShare} tooltip="Copy url to this state" />
-<Button disabled icon={mdiUpload} tooltip="Export to database" />
+<Button icon={mdiUpload} on:click={uploadResult} tooltip="Export to database" />
 <Button disabled icon={mdiCube} tooltip="Show model in 3D" />

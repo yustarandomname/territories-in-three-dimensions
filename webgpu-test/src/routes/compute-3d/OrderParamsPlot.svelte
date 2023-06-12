@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Node } from '../Universe';
 	import Chart, { type ChartData } from 'chart.js/auto';
+	import { settingStore } from '../vision/settingStore';
 
 	type OrderParams = { iter: number; result: number }[];
 	export let orderParams: OrderParams;
@@ -25,7 +26,7 @@
 			options: {
 				scales: {
 					x: {
-						type: 'linear',
+						type: $settingStore.orderScale,
 						position: 'bottom'
 					}
 				}
@@ -33,7 +34,7 @@
 		});
 	}
 
-	$: if (canvasEl && orderParams) setupChart(canvasEl, orderParams);
+	$: if (canvasEl && orderParams && $settingStore) setupChart(canvasEl, orderParams);
 </script>
 
 <div class="h-64 w64 flex justify-center mt-12">

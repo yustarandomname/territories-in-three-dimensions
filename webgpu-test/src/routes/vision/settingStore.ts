@@ -2,10 +2,12 @@ import { writable } from "svelte/store";
 
 type Settings = {
     darkMode: "dark" | "light" | "auto";
+    orderScale: "logarithmic" | "linear";
 }
 
 let defaultSettings: Settings = {
     darkMode: "auto",
+    orderScale: "logarithmic",
 }
 
 function createSettingStore() {
@@ -16,13 +18,13 @@ function createSettingStore() {
         setup: () => {
             let settings = localStorage?.getItem("settings");
 
-            if (settings) set(JSON.parse(settings));
+            if (settings) {
+                set({ ...defaultSettings, ...JSON.parse(settings) });
+            }
         },
-        set: (key: keyof Settings, value: any) => {
+        set: (key: keyof Settings, value: string) => {
             update((settings) => {
                 settings[key] = value;
-
-                console.log(key, value)
 
                 localStorage?.setItem("settings", JSON.stringify(settings));
 

@@ -102,7 +102,7 @@ function createGpuStore() {
             hasError.reset();
         },
         iterate: async (amount: number) => {
-            isLoading.set("Iterating to next generation");
+            isLoading.set("Iterating to next generation with amount: " + amount);
 
             const store = get(gpuStore);
 

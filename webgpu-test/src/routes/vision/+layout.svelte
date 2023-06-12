@@ -13,6 +13,7 @@
 	import { layoutData } from './layoutData';
 	import { settingStore } from './settingStore';
 	import Button from './components/Button.svelte';
+	import ScaleToggle from './components/ScaleToggle.svelte';
 
 	export let data: LayoutData;
 
@@ -60,6 +61,7 @@
 			return [...array, { iter: iterations, result }];
 		});
 	}
+	setContext('handleResultArray', handleResultArray);
 
 	async function reset() {
 		gpuStore.reset();
@@ -81,6 +83,7 @@
 		layoutData.orderParams.set([]);
 		handleResultArray(resultArrays);
 	}
+	setContext('resetFn', reset);
 
 	async function iterate() {
 		if (!isCompleteGpuStore($gpuStore)) return;
@@ -99,6 +102,7 @@
 {#if $hasError.hasError}
 	<div
 		transition:fly={{ y: -10 }}
+		style="z-index: 100"
 		class="absolute left-1/2 -translate-x-1/2 w-60 text-center top-12 bg-red-300/80 px-4 py-6 backdrop:blur-lg rounded-lg"
 	>
 		{$hasError.message || 'error'}
@@ -106,6 +110,7 @@
 {:else if $isLoading.loading}
 	<div
 		transition:fly={{ y: -10 }}
+		style="z-index: 100"
 		class="absolute left-1/2 -translate-x-1/2 w-60 text-center top-12 bg-slate-300/80 px-4 py-6 backdrop:blur-lg rounded-lg"
 	>
 		{$isLoading.message}
@@ -166,6 +171,7 @@
 					</div>
 				{:else}
 					<DarkToggle />
+					<ScaleToggle />
 					<div class="flex items-center gap-4 mt-2">
 						<p>Reset:</p>
 						<Button selected on:click={() => settingStore.reset()}>Reset settings</Button>

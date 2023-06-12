@@ -5,6 +5,7 @@
 	import AgentDensityPlot from '../../compute-3d/AgentDensityPlot.svelte';
 	import OrderParamsPlot from './../../compute-3d/OrderParamsPlot.svelte';
 	import Button from '../components/Button.svelte';
+	import { settingStore } from '../settingStore';
 
 	const { outputUniverse, HYPERPARAMS, sliceIndex, orderParams } =
 		getContext<LayoutData>('layoutData');
@@ -54,7 +55,7 @@
 >
 	<div class="sidePanel bg-gray-300/80 backdrop:blur-xl h-[20rem] rounded-xl p-8 flex items-center">
 		{#if $outputUniverse?.nodes}
-			{#key $outputUniverse}
+			{#key $outputUniverse || $settingStore.orderScale}
 				<OrderParamsPlot id="orderChart" orderParams={$orderParams} />
 			{/key}
 		{/if}

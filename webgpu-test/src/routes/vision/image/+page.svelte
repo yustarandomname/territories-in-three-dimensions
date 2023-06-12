@@ -3,6 +3,7 @@
 	import { getContext } from 'svelte';
 	import { Universe } from '../../Universe';
 	import Button from '../components/Button.svelte';
+	import Input from '../components/Input.svelte';
 	import Sheet from '../components/Sheet.svelte';
 	import SortableList from '../components/SortableList.svelte';
 	import { gpuStore, isCompleteGpuStore } from '../gpuStore';
@@ -11,13 +12,20 @@
 
 	const { outputUniverse, HYPERPARAMS, sliceIndex, iterateStep } =
 		getContext<LayoutData>('layoutData');
+	const resetFn = getContext<() => void>('resetFn');
+
+	type ResultArrays = { result: Float32Array; orderResult: Float32Array };
+	const handleResultArray =
+		getContext<(resultArrays: ResultArrays | undefined) => void>('handleResultArray');
 
 	let autoPlayPanel = false;
 	let iterateAutoStep = 10000;
-	let autoPlaySteps: { id: string; steps: number }[] = [
-		{ id: 'a', steps: 100 },
-		{ id: 'b', steps: 400 },
-		{ id: 'c', steps: 1000 }
+	let autoPlaySteps: { id: string; steps: number; amount: number }[] = [
+		{ id: 'a', steps: 1, amount: 25 },
+		{ id: 'b', steps: 10, amount: 10 },
+		{ id: 'c', steps: 100, amount: 10 },
+		{ id: 'd', steps: 400, amount: 3 },
+		{ id: 'e', steps: 1000, amount: 2 }
 	];
 
 	async function iterate() {
@@ -26,6 +34,8 @@
 
 		if (!resultArrays) return;
 		outputUniverse.set(Universe.from_result(resultArrays.result, $HYPERPARAMS.size, 3));
+
+		handleResultArray(resultArrays);
 	}
 
 	function removePlayId(id: string) {
@@ -33,7 +43,10 @@
 	}
 
 	function addPlayId() {
-		autoPlaySteps = [...autoPlaySteps, { id: Math.random().toString(), steps: iterateAutoStep }];
+		autoPlaySteps = [
+			...autoPlaySteps,
+			{ id: Math.random().toString(), steps: iterateAutoStep, amount: 1 }
+		];
 	}
 
 	function downloadCanvas() {
@@ -47,6 +60,23 @@
 		createEl.download = name + '-image.webp';
 		createEl.click();
 		createEl.remove();
+	}
+
+	async function playAll() {
+		autoPlayPanel = false;
+
+		for (let step of autoPlaySteps) {
+			iterateStep.set(step.steps);
+			for (let amount of new Array(step.amount).fill(0)) {
+				await iterate();
+			}
+		}
+	}
+
+	async function resetPlayAll() {
+		await resetFn();
+
+		await playAll();
 	}
 </script>
 
@@ -78,21 +108,32 @@
 			key="id"
 			on:sort={(ev) => (autoPlaySteps = ev.detail)}
 			let:item
+			let:index
 		>
-			{item.steps}
-			<Button icon={mdiTrashCan} on:click={() => removePlayId(item.id)} />
+			<div class="w-full flex items-center justify-between gap-2">
+				<Input
+					label="steps"
+					input={item.steps.toString()}
+					bind:value={autoPlaySteps[index].steps}
+				/>
+				<Input
+					label="times"
+					input={item.amount.toString()}
+					bind:value={autoPlaySteps[index].amount}
+				/>
+				<Button icon={mdiTrashCan} on:click={() => removePlayId(item.id)} />
+			</div>
 		</SortableList>
 	</ol>
 
-	<div class="w-full">
-		<input
-			type="number"
-			class="bg-transparent outline-none rounded text-center hover:bg-gray-200/20 active:bg-gray-200/20 w-16"
-			bind:value={iterateAutoStep}
-		/>
+	<div class="w-full flex justify-end mt-2 items-center gap-4 whitespace-nowrap">
+		<Input label="Add step" input={iterateAutoStep.toString()} bind:value={iterateAutoStep} />
 
-		<Button icon={mdiPlus} on:click={addPlayId} />
+		<Button selected icon={mdiPlus} on:click={addPlayId} />
 	</div>
 
-	<Button icon={mdiPlus}>Play all</Button>
+	<div class="flex gap-4">
+		<Button selected icon={mdiPlus} on:click={resetPlayAll}>Reset and play all</Button>
+		<Button icon={mdiPlus} on:click={playAll}>Play all</Button>
+	</div>
 </Sheet>
