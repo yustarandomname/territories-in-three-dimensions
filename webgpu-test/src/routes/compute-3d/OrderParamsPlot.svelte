@@ -13,7 +13,7 @@
 			labels: orderParams.map(({ iter, result }) => iter),
 			datasets: [
 				{
-					label: 'Order parameter over time',
+					label: `Order parameter over time (${$settingStore.orderScale} plot)`,
 					borderColor: 'rgba(255,99,132,1)',
 					data: orderParams.map(({ iter, result }) => result)
 				}
@@ -37,6 +37,6 @@
 	$: if (canvasEl && orderParams && $settingStore) setupChart(canvasEl, orderParams);
 </script>
 
-<div class="h-64 w64 flex justify-center mt-12">
+<div class="h-64 w-[35rem] flex justify-center mt-12">
 	<canvas {id} bind:this={canvasEl} />
 </div>

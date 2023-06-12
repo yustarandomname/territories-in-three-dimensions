@@ -34,16 +34,10 @@
 	<Button dark on:click={downloadCanvases}>Download charts</Button>
 </div>
 
-<div style="min-width: 30rem;" class="h-[30rem] p-8 flex items-center">
+<div style="min-width: 30rem;" class="h-[30rem] w-[40rem] p-8 flex items-center">
 	{#if $outputUniverse?.nodes}
-		{#key $outputUniverse}
-			<AgentDensityPlot
-				id="densityChart"
-				nodes={$outputUniverse.nodes.slice(
-					$sliceIndex * ($HYPERPARAMS.size * $HYPERPARAMS.size),
-					$sliceIndex * ($HYPERPARAMS.size * $HYPERPARAMS.size) + $HYPERPARAMS.size
-				)}
-			/>
+		{#key $outputUniverse || $settingStore.orderScale}
+			<OrderParamsPlot id="orderChart" orderParams={$orderParams} />
 		{/key}
 	{/if}
 </div>
@@ -55,8 +49,14 @@
 >
 	<div class="sidePanel bg-gray-300/80 backdrop:blur-xl h-[20rem] rounded-xl p-8 flex items-center">
 		{#if $outputUniverse?.nodes}
-			{#key $outputUniverse || $settingStore.orderScale}
-				<OrderParamsPlot id="orderChart" orderParams={$orderParams} />
+			{#key $outputUniverse}
+				<AgentDensityPlot
+					id="densityChart"
+					nodes={$outputUniverse.nodes.slice(
+						$sliceIndex * ($HYPERPARAMS.size * $HYPERPARAMS.size),
+						$sliceIndex * ($HYPERPARAMS.size * $HYPERPARAMS.size) + $HYPERPARAMS.size
+					)}
+				/>
 			{/key}
 		{/if}
 	</div>

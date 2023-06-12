@@ -1,13 +1,15 @@
 import { writable } from "svelte/store";
 
-type Settings = {
+export type Settings = {
     darkMode: "dark" | "light" | "auto";
     orderScale: "logarithmic" | "linear";
+    densityType: "relative" | "absolute",
 }
 
 let defaultSettings: Settings = {
     darkMode: "auto",
     orderScale: "logarithmic",
+    densityType: "absolute",
 }
 
 function createSettingStore() {

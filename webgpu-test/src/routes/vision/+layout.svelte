@@ -13,7 +13,7 @@
 	import { layoutData } from './layoutData';
 	import { settingStore } from './settingStore';
 	import Button from './components/Button.svelte';
-	import ScaleToggle from './components/ScaleToggle.svelte';
+	import Toggle from './components/Toggle.svelte';
 
 	export let data: LayoutData;
 
@@ -69,7 +69,7 @@
 
 		if (HYPERPARAMS.total_agents != total_agents) {
 			total_agents = HYPERPARAMS.total_agents;
-			inputUniverse = new Universe(50, total_agents, 3);
+			inputUniverse = new Universe(100, total_agents, 3);
 		}
 
 		await gpuStore.init();
@@ -171,7 +171,8 @@
 					</div>
 				{:else}
 					<DarkToggle />
-					<ScaleToggle />
+					<Toggle title="Order scale" key="orderScale" options={['linear', 'logarithmic']} />
+					<Toggle title="Density type" key="densityType" options={['relative', 'absolute']} />
 					<div class="flex items-center gap-4 mt-2">
 						<p>Reset:</p>
 						<Button selected on:click={() => settingStore.reset()}>Reset settings</Button>
