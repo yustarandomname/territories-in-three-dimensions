@@ -14,6 +14,7 @@
 	const { outputUniverse, HYPERPARAMS, sliceIndex, iterateStep } =
 		getContext<LayoutData>('layoutData');
 	const resetFn = getContext<() => void>('resetFn');
+	const playConfettti = getContext<() => void>('playConfettti');
 
 	type ResultArrays = { result: Float32Array; orderResult: Float32Array };
 	const handleResultArray =
@@ -97,6 +98,8 @@
 			minute: '2-digit',
 			second: '2-digit'
 		}).format(performance.now() - timeStart);
+
+		playConfettti();
 	}
 
 	async function resetPlayAll() {

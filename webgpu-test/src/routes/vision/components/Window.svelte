@@ -10,7 +10,7 @@
 
 	const dispatch = createEventDispatcher();
 
-	let tabs = ['Parameters', 'Agents', 'Settings'];
+	let tabs = ['Parameters', 'Universe', 'Settings'];
 	let selectedTab = tabs[0];
 
 	let showExpand = false;

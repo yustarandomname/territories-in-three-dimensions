@@ -14,8 +14,12 @@
 	import { settingStore } from './settingStore';
 	import Button from './components/Button.svelte';
 	import Toggle from './components/Toggle.svelte';
+	import JSConfetti from 'js-confetti';
 
 	export let data: LayoutData;
+
+	let confettiEl: HTMLCanvasElement | undefined;
+	let jsConfetti: JSConfetti;
 
 	let iterateStep = 1000;
 	let total_agents = 6250000;
@@ -39,6 +43,9 @@
 		iterations: 0,
 		total_agents: total_agents
 	};
+
+	let agentsPerCell = total_agents / Math.pow(HYPERPARAMS.size, 3);
+	$: HYPERPARAMS.total_agents = agentsPerCell * Math.pow(HYPERPARAMS.size, 3);
 
 	setContext('layoutData', layoutData);
 	$: layoutData.HYPERPARAMS.set(HYPERPARAMS);
@@ -93,10 +100,31 @@
 		handleResultArray(resultArrays);
 	}
 
+	function playConfettti() {
+		jsConfetti.addConfetti();
+
+		setTimeout(() => {
+			jsConfetti.addConfetti();
+		}, 3000);
+
+		setTimeout(() => {
+			jsConfetti.addConfetti();
+		}, 3000);
+
+		var audio = new Audio('/trumpets.mp3');
+		audio.play();
+	}
+
+	setContext('playConfettti', playConfettti);
+
 	onMount(async () => {
 		settingStore.setup();
 
 		await reset();
+
+		if (confettiEl) {
+			jsConfetti = new JSConfetti({ canvas: confettiEl });
+		}
 	});
 </script>
 
@@ -117,6 +145,9 @@
 		{$isLoading.message}
 	</div>
 {/if}
+
+<!-- Confetti -->
+<canvas bind:this={confettiEl} class="absolute top-0 left-0 h-full w-full bg-red" />
 
 <div
 	class="background h-full w-full text-white flex justify-center items-center"
@@ -155,19 +186,20 @@
 							bind:value={HYPERPARAMS.lambda}
 						/>
 					</div>
-				{:else if selectedTab == 'Agents'}
+				{:else if selectedTab == 'Universe'}
 					<div class="flex flex-wrap gap-4">
-						<div class="flex items-center gap-2">
-							<Input label="Species" input="2" value={2} />
-							<p>(Work in Progress)</p>
-						</div>
+						<Input
+							label="Lattice length"
+							input={HYPERPARAMS.size.toString()}
+							bind:value={HYPERPARAMS.size}
+						/>
 						<div class="flex items-center gap-2">
 							<Input
 								label="Agents / species"
 								input={HYPERPARAMS.total_agents.toString()}
 								bind:value={HYPERPARAMS.total_agents}
 							/>
-							<p>{HYPERPARAMS.total_agents / HYPERPARAMS.size ** 3} per cell</p>
+							<Input label="per cell" input={agentsPerCell.toString()} bind:value={agentsPerCell} />
 						</div>
 					</div>
 				{:else}
@@ -220,9 +252,21 @@
 		opacity: 0;
 	}
 
+	:global(body) {
+		@apply bg-orange-200;
+
+		&:has(.dark) {
+			@apply bg-slate-800;
+		}
+	}
+
 	@media (prefers-color-scheme: dark) {
 		.auto.background::before {
 			opacity: 0;
+		}
+
+		:global(body):has(auto) {
+			@apply bg-slate-800;
 		}
 	}
 </style>
