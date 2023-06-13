@@ -9,6 +9,7 @@
 	import { gpuStore, isCompleteGpuStore } from '../gpuStore';
 	import type { LayoutData } from '../layoutData';
 	import Canvas from '../../compute/Canvas.svelte';
+	import { settingStore } from '../settingStore';
 
 	const { outputUniverse, HYPERPARAMS, sliceIndex, iterateStep } =
 		getContext<LayoutData>('layoutData');
@@ -20,13 +21,14 @@
 
 	let autoPlayPanel = false;
 	let iterateAutoStep = 10000;
-	let autoPlaySteps: { id: string; steps: number; amount: number }[] = [
-		{ id: 'a', steps: 1, amount: 25 },
-		{ id: 'b', steps: 10, amount: 10 },
-		{ id: 'c', steps: 100, amount: 10 },
-		{ id: 'd', steps: 400, amount: 3 },
-		{ id: 'e', steps: 1000, amount: 2 }
-	];
+	let timeRemaining: string | undefined;
+	let timeTaken: string | undefined;
+	let playedSteps = 0;
+
+	$: totalAmount = $settingStore.autoPlaySteps.reduce(
+		(acc, curr) => acc + curr.steps * curr.amount,
+		0
+	);
 
 	async function iterate() {
 		if (!isCompleteGpuStore($gpuStore)) return;
@@ -39,12 +41,12 @@
 	}
 
 	function removePlayId(id: string) {
-		autoPlaySteps = autoPlaySteps.filter((step) => step.id !== id);
+		$settingStore.autoPlaySteps = $settingStore.autoPlaySteps.filter((step) => step.id !== id);
 	}
 
 	function addPlayId() {
-		autoPlaySteps = [
-			...autoPlaySteps,
+		$settingStore.autoPlaySteps = [
+			...$settingStore.autoPlaySteps,
 			{ id: Math.random().toString(), steps: iterateAutoStep, amount: 1 }
 		];
 	}
@@ -64,13 +66,37 @@
 
 	async function playAll() {
 		autoPlayPanel = false;
+		timeTaken = undefined;
+		const timeStart = performance.now();
 
-		for (let step of autoPlaySteps) {
+		settingStore.set('autoPlaySteps', $settingStore.autoPlaySteps);
+
+		playedSteps = 0;
+
+		for (let step of $settingStore.autoPlaySteps) {
+			settingStore.set('autoPlaySteps', $settingStore.autoPlaySteps);
 			iterateStep.set(step.steps);
 			for (let amount of new Array(step.amount).fill(0)) {
 				await iterate();
+
+				playedSteps += step.steps;
+
+				const now = performance.now();
+				const timeElapsed = now - timeStart;
+
+				const estimatedTimeRemaining = ((totalAmount - playedSteps) / playedSteps) * timeElapsed;
+				timeRemaining = new Intl.DateTimeFormat('en', {
+					minute: '2-digit',
+					second: '2-digit'
+				}).format(estimatedTimeRemaining);
 			}
 		}
+
+		timeRemaining = undefined;
+		timeTaken = new Intl.DateTimeFormat('en', {
+			minute: '2-digit',
+			second: '2-digit'
+		}).format(performance.now() - timeStart);
 	}
 
 	async function resetPlayAll() {
@@ -79,6 +105,17 @@
 		await playAll();
 	}
 </script>
+
+{#if timeTaken}
+	<div class="absolute bottom-12 right-2 p-4 rounded-lg bg-slate-600">
+		Time taken to iterate: {timeTaken}
+	</div>
+{:else if timeRemaining}
+	<div class="absolute bottom-12 right-2 p-4 rounded-lg bg-slate-600">
+		<p>Steps: {playedSteps} / {totalAmount}</p>
+		<p>Time remaining: {timeRemaining}</p>
+	</div>
+{/if}
 
 {#if !$outputUniverse}
 	<div class="h-[640px] w-[640px] bg-purple-900/60" />
@@ -101,12 +138,12 @@
 	</button>
 </div>
 
-<Sheet title="Autoplay" bind:open={autoPlayPanel}>
+<Sheet title="Autoplay | total steps: {totalAmount}" bind:open={autoPlayPanel}>
 	<ol class="sortableList">
 		<SortableList
-			list={autoPlaySteps}
+			list={$settingStore.autoPlaySteps}
 			key="id"
-			on:sort={(ev) => (autoPlaySteps = ev.detail)}
+			on:sort={(ev) => ($settingStore.autoPlaySteps = ev.detail)}
 			let:item
 			let:index
 		>
@@ -114,12 +151,12 @@
 				<Input
 					label="steps"
 					input={item.steps.toString()}
-					bind:value={autoPlaySteps[index].steps}
+					bind:value={$settingStore.autoPlaySteps[index].steps}
 				/>
 				<Input
 					label="times"
 					input={item.amount.toString()}
-					bind:value={autoPlaySteps[index].amount}
+					bind:value={$settingStore.autoPlaySteps[index].amount}
 				/>
 				<Button icon={mdiTrashCan} on:click={() => removePlayId(item.id)} />
 			</div>

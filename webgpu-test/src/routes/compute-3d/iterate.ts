@@ -6,7 +6,6 @@ export default async function iterate(amount: number, { device, pipelines, hyper
     const dispatchWorkgroups = Math.ceil(Math.pow(HYPERPARAMS.size, 3) / 100); //TODO: make this hyperparam
 
     // Setup pipeline
-    console.time(`Time to iterate: ${amount}`);
     for (let i = 0; i < amount; i++) {
         const pass = encoder.beginComputePass();
         pass.setPipeline(pipelines['update_graffiti_and_push_strength'].pipeline);
@@ -52,7 +51,6 @@ export default async function iterate(amount: number, { device, pipelines, hyper
 
     // Finish encoding and submit the commands
     device.queue.submit([encoder.finish()]);
-    console.timeEnd(`Time to iterate: ${amount}`);
 
     // Read results
     await outputBuffers.resultBuffer.mapAsync(GPUMapMode.READ);

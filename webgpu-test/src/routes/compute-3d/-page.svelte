@@ -391,7 +391,6 @@
 	<input bind:value={do_iterations} />
 	<button
 		on:click={() => {
-			console.time(`Time to iterate: ${do_iterations}`);
 			for (let i = 0; i < do_iterations; i++) {
 				if (i == do_iterations - 1) {
 					probe = true;
@@ -399,7 +398,6 @@
 
 				iterateFunction?.();
 			}
-			console.timeEnd(`Time to iterate: ${do_iterations}`);
 		}}
 		>Step
 	</button>

@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
+	import { getContext, onMount } from 'svelte';
 	import type { LayoutData } from '../layoutData';
 	import { fly } from 'svelte/transition';
 	import AgentDensityPlot from '../../compute-3d/AgentDensityPlot.svelte';
 	import OrderParamsPlot from './../../compute-3d/OrderParamsPlot.svelte';
 	import Button from '../components/Button.svelte';
 	import { settingStore } from '../settingStore';
+	import { convertToCSVAndDownload } from './../toCSV';
 
 	const { outputUniverse, HYPERPARAMS, sliceIndex, orderParams } =
 		getContext<LayoutData>('layoutData');
@@ -28,10 +29,15 @@
 		downloadCanvas(canvas1);
 		downloadCanvas(canvas2);
 	}
+
+	function downloadData() {
+		convertToCSVAndDownload($orderParams);
+	}
 </script>
 
 <div class="absolute top-2 right-2 m-4 flex gap-4">
-	<Button dark on:click={downloadCanvases}>Download charts</Button>
+	<Button dark on:click={downloadData}>Order csv</Button>
+	<Button dark on:click={downloadCanvases}>Download image</Button>
 </div>
 
 <div style="min-width: 30rem;" class="h-[30rem] w-[40rem] p-8 flex items-center">
