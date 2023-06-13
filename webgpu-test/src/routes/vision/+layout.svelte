@@ -9,7 +9,7 @@
 	import Input from './components/Input.svelte';
 	import TabItem from './components/TabItem.svelte';
 	import Window from './components/Window.svelte';
-	import { gpuStore, hasError, isCompleteGpuStore, isLoading } from './gpuStore';
+	import { HyperParameters, gpuStore, hasError, isCompleteGpuStore, isLoading } from './gpuStore';
 	import { layoutData } from './layoutData';
 	import { settingStore } from './settingStore';
 	import Button from './components/Button.svelte';
@@ -18,14 +18,23 @@
 
 	export let data: LayoutData;
 
+	export const HYPERPARAMS = HyperParameters.fromObject({
+		lambda: 0.5,
+		gamma: 0.5,
+		beta: (4 / 3) * 1e-5,
+		size: 50,
+		iterations: 0,
+		total_agents: 6250000,
+		seed: 123
+	});
+
 	let confettiEl: HTMLCanvasElement | undefined;
 	let jsConfetti: JSConfetti;
 
 	let iterateStep = 1000;
-	let total_agents = 6250000;
 	let sliceIndex = 0;
 
-	let inputUniverse = new Universe(50, total_agents, 3);
+	let inputUniverse = new Universe(HYPERPARAMS.size, HYPERPARAMS.total_agents, 3, HYPERPARAMS.seed);
 	let outputUniverse: Universe;
 
 	let tabs = [
@@ -35,16 +44,7 @@
 		{ name: 'Archive', icon: mdiArchive, url: 'archive' }
 	];
 
-	export const HYPERPARAMS = {
-		lambda: 0.5,
-		gamma: 0.5,
-		beta: (4 / 3) * 1e-5,
-		size: inputUniverse.size,
-		iterations: 0,
-		total_agents: total_agents
-	};
-
-	let agentsPerCell = total_agents / Math.pow(HYPERPARAMS.size, 3);
+	let agentsPerCell = HYPERPARAMS.total_agents / Math.pow(HYPERPARAMS.size, 3);
 	$: HYPERPARAMS.total_agents = agentsPerCell * Math.pow(HYPERPARAMS.size, 3);
 
 	setContext('layoutData', layoutData);
@@ -59,7 +59,12 @@
 	function handleResultArray(resultArrays: ResultArrays | undefined) {
 		if (!resultArrays) return;
 
-		outputUniverse = Universe.from_result(resultArrays.result, HYPERPARAMS.size, 3);
+		outputUniverse = Universe.from_result(
+			resultArrays.result,
+			HYPERPARAMS.size,
+			3,
+			HYPERPARAMS.seed
+		);
 		layoutData.outputUniverse.set(outputUniverse);
 
 		layoutData.orderParams.update((array) => {
@@ -75,9 +80,9 @@
 		gpuStore.reset();
 		HYPERPARAMS.iterations = 0;
 
-		if (HYPERPARAMS.total_agents != total_agents) {
-			total_agents = HYPERPARAMS.total_agents;
-			inputUniverse = new Universe(100, total_agents, 3);
+		if (inputUniverse.isChanged(HYPERPARAMS)) {
+			console.log('universe is changed, creating new universe');
+			inputUniverse = new Universe(HYPERPARAMS.size, HYPERPARAMS.total_agents, 3, HYPERPARAMS.seed);
 		}
 
 		await gpuStore.init();
@@ -180,11 +185,7 @@
 							input={HYPERPARAMS.lambda.toString()}
 							bind:value={HYPERPARAMS.lambda}
 						/>
-						<Input
-							label="Seed"
-							input={HYPERPARAMS.lambda.toString()}
-							bind:value={HYPERPARAMS.lambda}
-						/>
+						<Input label="Seed" input={HYPERPARAMS.seed.toString()} bind:value={HYPERPARAMS.seed} />
 					</div>
 				{:else if selectedTab == 'Universe'}
 					<div class="flex flex-wrap gap-4">

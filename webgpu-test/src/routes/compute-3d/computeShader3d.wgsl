@@ -5,6 +5,7 @@ struct HyperParams {
     size: f32, // length of one side of grid
     iterations: f32,
     total_agents: f32,
+    seed: f32,
 }
 
 struct Node {

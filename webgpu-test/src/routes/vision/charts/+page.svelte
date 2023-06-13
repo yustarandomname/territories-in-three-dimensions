@@ -31,7 +31,7 @@
 	}
 
 	function downloadData() {
-		convertToCSVAndDownload($orderParams);
+		convertToCSVAndDownload($orderParams, $HYPERPARAMS);
 	}
 </script>
 

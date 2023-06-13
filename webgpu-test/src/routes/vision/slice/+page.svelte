@@ -11,7 +11,7 @@
 	import Canvas from '../../compute/Canvas.svelte';
 	import { settingStore } from '../settingStore';
 
-	const { outputUniverse, HYPERPARAMS, sliceIndex, iterateStep } =
+	const { outputUniverse, HYPERPARAMS, sliceIndex, iterateStep, orderParams } =
 		getContext<LayoutData>('layoutData');
 	const resetFn = getContext<() => void>('resetFn');
 	const playConfettti = getContext<() => void>('playConfettti');
@@ -36,7 +36,9 @@
 		const resultArrays = await gpuStore.iterate($iterateStep);
 
 		if (!resultArrays) return;
-		outputUniverse.set(Universe.from_result(resultArrays.result, $HYPERPARAMS.size, 3));
+		outputUniverse.set(
+			Universe.from_result(resultArrays.result, $HYPERPARAMS.size, 3, $HYPERPARAMS.seed)
+		);
 
 		handleResultArray(resultArrays);
 	}
@@ -106,6 +108,13 @@
 		await resetFn();
 
 		await playAll();
+
+		console.log(
+			`final orderparam for beta = ${$HYPERPARAMS.beta.toExponential()} and seed = ${
+				$HYPERPARAMS.seed
+			} and total agents = ${$HYPERPARAMS.total_agents} is`,
+			$orderParams.at(-1)
+		);
 	}
 </script>
 

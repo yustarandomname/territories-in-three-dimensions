@@ -1,3 +1,5 @@
+import type { HyperParameters } from "./gpuStore";
+
 export function convertToCSV<T extends Object>(arr: T[]) {
     const keys = [Object.keys(arr[0]).toString()];
 
@@ -8,12 +10,12 @@ export function convertToCSV<T extends Object>(arr: T[]) {
     return keys.concat(values).join('\n');
 }
 
-export function convertToCSVAndDownload<T extends Object>(arr: T[]) {
+export function convertToCSVAndDownload<T extends Object>(arr: T[], hyperParamers: HyperParameters) {
     const csv = convertToCSV(arr)
 
     let j = document.createElement("a")
-    j.download = "example_" + Date.now() + ".csv"
+    j.download = hyperParamers.toString() + ".csv"
     j.href = URL.createObjectURL(new Blob([csv]))
-    j.click()
-    document.removeChild(j)
+    j.click();
+    j.remove();
 }

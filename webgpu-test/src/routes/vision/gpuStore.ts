@@ -32,13 +32,31 @@ function hasErrorStore() {
 export const isLoading = isLoadingStore();
 export const hasError = hasErrorStore();
 
-export type HyperParameters = {
-    lambda: number;
-    gamma: number;
-    beta: number;
-    size: number;
-    iterations: number;
-    total_agents: number;
+export class HyperParameters {
+    constructor(public lambda: number, public gamma: number, public beta: number, public size: number, public iterations: number, public total_agents: number, public seed: number) { }
+
+    static fromObject(obj: Omit<HyperParameters, "mass" | "total_size" | "agents_per_cell" | "toString">) {
+        return new HyperParameters(obj.lambda, obj.gamma, obj.beta, obj.size, obj.iterations, obj.total_agents, obj.seed);
+    }
+
+    /**
+     * mass
+     */
+    get mass() {
+        return this.total_agents * 2;
+    }
+
+    get total_size() {
+        return this.size * this.size * this.size;
+    }
+
+    get agents_per_cell() {
+        return this.total_agents / this.total_size;
+    }
+
+    toString() {
+        return `lambda=${this.lambda},gamma=${this.gamma},beta=${this.beta},size=${this.size},iterations=${this.iterations},total_agents=${this.total_agents},seed=${this.seed}`
+    }
 }
 
 export type CompleteGpuStore = {
@@ -82,6 +100,7 @@ function createGpuStore() {
             }
 
             const hyperparamsArray = new Float32Array(Object.values(hyperparams));
+            console.log(hyperparamsArray);
             const gpuSetup = await setup(gpuDevice, { hyperparamsArray, universeArray }, hyperparams)
 
             await update(gpuStore => {

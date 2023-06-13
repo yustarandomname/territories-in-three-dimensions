@@ -1,6 +1,5 @@
 <script lang="ts">
-	import type { Node } from '../Universe';
-	import Chart, { type ChartData } from 'chart.js/auto';
+	import Chart from 'chart.js/auto';
 	import { settingStore } from '../vision/settingStore';
 
 	type OrderParams = { iter: number; result: number }[];

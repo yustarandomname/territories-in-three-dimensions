@@ -1,4 +1,5 @@
 import seedrandom, { type PRNG } from 'seedrandom';
+import type { HyperParameters } from './vision/gpuStore';
 
 function random(prng: PRNG, min: number, max: number): number {
     return Math.floor(prng.quick() * (max - min) + min);
@@ -34,8 +35,8 @@ export class Universe implements ToF32Buffer {
     nodes: Node[] = [];
     total_size: number;
 
-    constructor(public size: number, agent_size: number, public dimensions: number) {
-        let prng = seedrandom('hello universe');
+    constructor(public size: number, public total_agents: number, public dimensions: number, public seed: number) {
+        let prng = seedrandom((seed).toString() + dimensions.toString() + size.toString() + total_agents.toString());
         this.total_size = Math.pow(size, dimensions);
 
         // Create nodes
@@ -45,13 +46,13 @@ export class Universe implements ToF32Buffer {
         }
 
         // Add red agents to random nodes
-        for (let ar = 0; ar < agent_size; ar++) {
+        for (let ar = 0; ar < total_agents; ar++) {
             let node = random(prng, 0, this.total_size);
             this.nodes[node].red_agents++;
         }
 
         // Add blue agents to random nodes
-        for (let ab = 0; ab < agent_size; ab++) {
+        for (let ab = 0; ab < total_agents; ab++) {
             let node = random(prng, 0, this.total_size);
             this.nodes[node].blue_agents++;
         }
@@ -73,15 +74,23 @@ export class Universe implements ToF32Buffer {
     }
 
     clone(): Universe {
-        let universe = new Universe(this.size, 0, this.dimensions);
+        let universe = new Universe(this.size, 0, this.dimensions, this.seed);
 
         universe.nodes = this.nodes.map(n => n.clone())
 
         return universe;
     }
 
-    static from_result(result: Float32Array, size: number, dimensions: number): Universe {
-        let universe = new Universe(size, 0, dimensions);
+    isChanged(hyperparameters: HyperParameters): boolean {
+        if (hyperparameters.size !== this.size) return true;
+        if (hyperparameters.total_agents !== this.total_agents) return true;
+        if (hyperparameters.seed !== this.seed) return true;
+
+        return false;
+    }
+
+    static from_result(result: Float32Array, size: number, dimensions: number, seed: number): Universe {
+        let universe = new Universe(size, 0, dimensions, seed);
 
         for (let i = 0; i < universe.nodes.length; i++) {
             let node = universe.nodes[i];
