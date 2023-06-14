@@ -100,6 +100,7 @@
 			minute: '2-digit',
 			second: '2-digit'
 		}).format(performance.now() - timeStart);
+		console.log(performance.now() - timeStart);
 
 		playConfettti();
 	}

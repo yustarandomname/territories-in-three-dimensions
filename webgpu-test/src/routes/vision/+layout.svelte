@@ -21,7 +21,7 @@
 	export const HYPERPARAMS = HyperParameters.fromObject({
 		lambda: 0.5,
 		gamma: 0.5,
-		beta: (4 / 3) * 1e-5,
+		beta: 1.5 * 1e-5,
 		size: 50,
 		iterations: 0,
 		total_agents: 6250000,
@@ -110,7 +110,7 @@
 
 		setTimeout(() => {
 			jsConfetti.addConfetti();
-		}, 3000);
+		}, 1500);
 
 		setTimeout(() => {
 			jsConfetti.addConfetti();
