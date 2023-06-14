@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import setup, { type Pipeline, type OutputBuffers, type StorageBuffers } from './setup';
 	import { Universe } from '../Universe';
+	import { HyperParameters } from '../vision/gpuStore';
 
 	type OrderParams = { iteration: number; orderParam: number }[];
 
@@ -16,7 +17,7 @@
 	let total_agents = 6250000;
 	let do_iterations = 10000;
 
-	let inputUniverse = new Universe(50, total_agents, 3);
+	let inputUniverse = new Universe(50, total_agents, 3, 123);
 	let outputUniverse: Universe;
 
 	const HYPERPARAMS = {
@@ -25,7 +26,8 @@
 		beta: (4 / 3) * 1e-5,
 		size: inputUniverse.size,
 		iterations: 0,
-		total_agents: total_agents
+		total_agents: total_agents,
+		seed: 123
 	};
 
 	onMount(async () => {
@@ -50,7 +52,11 @@
 
 		const universeArray = new Float32Array(inputUniverse.to_f32_buffer());
 
-		const gpuSetup = await setup(gpuDevice, { hyperparamsArray, universeArray });
+		const gpuSetup = await setup(
+			gpuDevice,
+			{ hyperparamsArray, universeArray },
+			HyperParameters.fromObject(HYPERPARAMS)
+		);
 		pipelines = gpuSetup.pipelines;
 		storageBuffers = gpuSetup.storageBuffers;
 		outputBuffers = gpuSetup.outputBuffers;
@@ -121,7 +127,7 @@
 		outputBuffers.resultBuffer.unmap();
 
 		// // Output the results
-		outputUniverse = Universe.from_result(result, HYPERPARAMS.size, 3);
+		outputUniverse = Universe.from_result(result, HYPERPARAMS.size, 3, 123);
 		console.log('output', outputUniverse.nodes.slice(0, 10));
 
 		// console.time(`Time to read`);

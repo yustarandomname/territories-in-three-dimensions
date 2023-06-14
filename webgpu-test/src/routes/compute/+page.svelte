@@ -1,332 +1,172 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { writable } from 'svelte/store';
+	import setup2D, { type Pipeline, type OutputBuffers, type StorageBuffers } from './setup2d';
 	import { Universe } from '../Universe';
-	import computeShader from './computeShader.wgsl?raw';
+	import { HyperParameters } from '../vision/gpuStore';
 	import Canvas from './Canvas.svelte';
 
-	let inputUniverse = new Universe(100, 100000, 2);
-	let outputUniverse: Universe;
-	let probe: boolean = true;
-	let isPlaying = writable<boolean>(false);
-	let playInterval: number | undefined;
+	type OrderParams = { iteration: number; orderParam: number }[];
 
-	let iterateFunction: (() => Promise<void>) | undefined;
+	let device: GPUDevice;
+	let pipelines: Pipeline | undefined;
+	let outputBuffers: OutputBuffers;
+	let storageBuffers: StorageBuffers;
+	let error: string;
+	let loading = true;
+	let orderParams: OrderParams = [];
+	const SEED = 12345;
+
+	let total_agents = 50000;
+	let do_iterations = 10000;
+
+	let inputUniverse = new Universe(100, total_agents, 2, SEED);
+	console.log(inputUniverse.total_size);
+	let outputUniverse: Universe;
 
 	const HYPERPARAMS = {
 		lambda: 0.5,
 		gamma: 0.5,
-		beta: 0.1,
+		beta: 3 * 1e-5,
 		size: inputUniverse.size,
-		iterations: 0
+		iterations: 0,
+		total_agents: total_agents,
+		seed: SEED
 	};
 
-	function iterate() {
-		inputUniverse = outputUniverse.clone();
-		main();
-	}
-
-	async function main() {
-		const adapter = await navigator.gpu?.requestAdapter();
-		const device = await adapter?.requestDevice();
-		if (!device) {
+	onMount(async () => {
+		loading = true;
+		const adapter = await navigator.gpu?.requestAdapter({ powerPreference: 'high-performance' });
+		const gpuDevice = await adapter?.requestDevice();
+		if (!gpuDevice) {
 			console.log('need a browser that supports WebGPU');
+			error = 'need a browser that supports WebGPU this demo only works in Chrome version 114+ ';
 			return;
 		}
+		device = gpuDevice;
 
-		const module = device.createShaderModule({
-			label: 'doubling compute module',
-			code: computeShader
-		});
-
-		const input = inputUniverse.to_f32_buffer();
-
-		// Create a uniform buffer that describes the grid hyper paramets.
-		const uniformArray = new Float32Array([
+		const hyperparamsArray = new Float32Array([
 			HYPERPARAMS.lambda,
 			HYPERPARAMS.gamma,
 			HYPERPARAMS.beta,
 			HYPERPARAMS.size,
-			HYPERPARAMS.iterations
+			HYPERPARAMS.iterations,
+			HYPERPARAMS.total_agents,
+			HYPERPARAMS.seed
 		]);
-		const uniformBuffer = device.createBuffer({
-			label: 'Grid Uniforms',
-			size: uniformArray.byteLength,
-			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-		});
-		device.queue.writeBuffer(uniformBuffer, 0, uniformArray);
 
-		// create a buffer on the GPU to hold our computation input as ping pong buffers
-		const cellStateStorage = [
-			device.createBuffer({
-				label: 'Cell State A',
-				size: input.byteLength,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
-			}),
-			device.createBuffer({
-				label: 'Cell State B',
-				size: input.byteLength,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
-			})
-		] as const;
+		const universeArray = new Float32Array(inputUniverse.to_f32_buffer());
 
-		// Copy our input data to that the first buffer
-		device.queue.writeBuffer(cellStateStorage[0], 0, input);
+		const gpuSetup = await setup2D(
+			gpuDevice,
+			{ hyperparamsArray, universeArray },
+			HyperParameters.fromObject(HYPERPARAMS)
+		);
+		pipelines = gpuSetup.pipelines;
+		storageBuffers = gpuSetup.storageBuffers;
+		outputBuffers = gpuSetup.outputBuffers;
 
-		const agentsOutArray = new Float32Array(input.length * 4);
-		// Create a buffer for storing the amount of agents moving out
-		const agentsOutBuffers = [
-			device.createBuffer({
-				label: 'Agents Out red',
-				size: agentsOutArray.byteLength,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST //TODO: remove COPY src
-			}),
-			device.createBuffer({
-				label: 'Agents Out blue',
-				size: agentsOutArray.byteLength,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST //TODO: remove COPY src
-			})
-		];
-		device.queue.writeBuffer(agentsOutBuffers[0], 0, agentsOutArray);
-		device.queue.writeBuffer(agentsOutBuffers[1], 0, new Float32Array(input.length * 4));
+		error = '';
+		loading = false;
+	});
 
-		// create a buffer on the GPU to get a copy of the results
-		const resultBuffer = device.createBuffer({
-			label: 'result buffer',
-			size: input.byteLength,
-			usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
-		});
+	async function iterate(amount: number) {
+		if (!pipelines || loading || !device) return;
+		loading = true;
 
-		const bindGroupLayout = device.createBindGroupLayout({
-			label: 'Cell Bind Group Layout',
-			entries: [
-				{
-					binding: 0,
-					visibility: GPUShaderStage.COMPUTE,
-					buffer: {} // Grid uniform buffer
-				},
-				{
-					binding: 1,
-					visibility: GPUShaderStage.COMPUTE,
-					buffer: { type: 'read-only-storage' } // Cell state input buffer
-				},
-				{
-					binding: 2,
-					visibility: GPUShaderStage.COMPUTE,
-					buffer: { type: 'storage' } // Cell state output buffer
-				},
-				{
-					binding: 3,
-					visibility: GPUShaderStage.COMPUTE,
-					buffer: { type: 'storage' } // Cell state output buffer
-				},
-				{
-					binding: 4,
-					visibility: GPUShaderStage.COMPUTE,
-					buffer: { type: 'storage' } // Cell state output buffer
-				}
-			]
-		});
+		const encoder = device.createCommandEncoder();
+		const dispatchWorkgroups = Math.ceil(Math.pow(HYPERPARAMS.size, 2) / 100); //TODO: make this hyperparam
 
-		function createPipeline(entryPoint: string, device: GPUDevice) {
-			const pipelineLayout = device.createPipelineLayout({
-				label: 'Cell Pipeline Layout',
-				bindGroupLayouts: [bindGroupLayout]
-			});
+		// Setup pipeline
+		for (let i = 0; i < amount; i++) {
+			const pass = encoder.beginComputePass();
+			pass.setPipeline(pipelines['update_graffiti_and_push_strength'].pipeline);
+			pass.setBindGroup(
+				0,
+				pipelines['update_graffiti_and_push_strength'].bindGroups[HYPERPARAMS.iterations % 2]
+			);
+			pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1);
 
-			const computePipeline = device.createComputePipeline({
-				label: `${entryPoint} pipeline`,
-				layout: pipelineLayout,
-				compute: {
-					module,
-					entryPoint
-				}
-			});
+			pass.setPipeline(pipelines['move_agents_out'].pipeline);
+			pass.setBindGroup(0, pipelines['move_agents_out'].bindGroups[HYPERPARAMS.iterations % 2]);
+			pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1);
 
-			// Setup a bindGroup to tell the shader which buffer to use for the computation
-			// For each iterations we need to swap the input and output buffers
-			const bindGroups = [
-				device.createBindGroup({
-					label: `BindGroup for ${entryPoint}, iteration ${HYPERPARAMS.iterations}, group A`,
-					layout: bindGroupLayout,
-					entries: [
-						{
-							binding: 0,
-							resource: { buffer: uniformBuffer }
-						},
-						{
-							binding: 1,
-							resource: { buffer: cellStateStorage[0] } // Cell state A buffer
-						},
-						{
-							binding: 2,
-							resource: { buffer: cellStateStorage[1] } // Cell state B buffer
-						},
-						{
-							binding: 3,
-							resource: { buffer: agentsOutBuffers[0] }
-						},
-						{
-							binding: 4,
-							resource: { buffer: agentsOutBuffers[1] }
-						}
-					]
-				}),
-				device.createBindGroup({
-					label: `BindGroup for ${entryPoint}, iteration ${HYPERPARAMS.iterations}, group A`,
-					layout: bindGroupLayout,
-					entries: [
-						{
-							binding: 0,
-							resource: { buffer: uniformBuffer }
-						},
-						{
-							binding: 1,
-							resource: { buffer: cellStateStorage[1] } // Cell state B buffer
-						},
-						{
-							binding: 2,
-							resource: { buffer: cellStateStorage[0] } // Cell state A buffer
-						},
-						{
-							binding: 3,
-							resource: { buffer: agentsOutBuffers[0] }
-						},
-						{
-							binding: 4,
-							resource: { buffer: agentsOutBuffers[1] }
-						}
-					]
-				})
-			];
-
-			return { computePipeline, bindGroups };
+			pass.setPipeline(pipelines['move_agents_in'].pipeline);
+			pass.setBindGroup(0, pipelines['move_agents_in'].bindGroups[HYPERPARAMS.iterations % 2]);
+			pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1);
+			HYPERPARAMS.iterations++;
+			pass.end();
 		}
 
-		// Setup the pipeline for the update cell graffiti step
-		const { computePipeline: updateGraffitiPipeline, bindGroups: updateBindGroups } =
-			createPipeline('update_graffiti_and_push_strength', device);
+		// Calculate order parameter
+		const pass = encoder.beginComputePass();
+		pass.setPipeline(pipelines['calculate_order_param'].pipeline);
+		pass.setBindGroup(0, pipelines['calculate_order_param'].bindGroups[HYPERPARAMS.iterations % 2]);
+		pass.dispatchWorkgroups(dispatchWorkgroups, 1, 1);
+		pass.end();
 
-		const { computePipeline: moveAgentsOutPipeline, bindGroups: moveOutBindGroups } =
-			createPipeline('move_agents_out', device);
-
-		const { computePipeline: moveAgentsInPipeline, bindGroups: moveInBindGroups } = createPipeline(
-			'move_agents_in',
-			device
+		// Move storage buffers to result buffers
+		encoder.copyBufferToBuffer(
+			storageBuffers.cellStateStorage[(HYPERPARAMS.iterations + 1) % 2],
+			0,
+			outputBuffers.resultBuffer,
+			0,
+			outputBuffers.resultBuffer.size
+		);
+		encoder.copyBufferToBuffer(
+			storageBuffers.orderBuffer,
+			0,
+			outputBuffers.orderResultBuffer,
+			0,
+			outputBuffers.orderResultBuffer.size
 		);
 
-		async function iterate() {
-			if (!device) return;
+		// Finish encoding and submit the commands
+		device.queue.submit([encoder.finish()]);
 
-			const encoder = device.createCommandEncoder();
+		// Read results
+		await outputBuffers.resultBuffer.mapAsync(GPUMapMode.READ);
+		const result = new Float32Array(outputBuffers.resultBuffer.getMappedRange().slice(0));
+		outputBuffers.resultBuffer.unmap();
 
-			{
-				// Update graffiti and push strength
-				const pass = encoder.beginComputePass();
-				pass.setPipeline(updateGraffitiPipeline);
-				pass.setBindGroup(0, updateBindGroups[HYPERPARAMS.iterations % 2]);
-				pass.dispatchWorkgroups((HYPERPARAMS.size * HYPERPARAMS.size) / 10, 1, 1); // TODO: math.ceil
-				pass.end();
-			}
-			{
-				// Move agents out
-				const pass = encoder.beginComputePass();
-				pass.setPipeline(moveAgentsOutPipeline);
-				pass.setBindGroup(0, moveOutBindGroups[HYPERPARAMS.iterations % 2]);
-				pass.dispatchWorkgroups((HYPERPARAMS.size * HYPERPARAMS.size) / 10, 1, 1); // TODO: math.ceil
-				pass.end();
-			}
-			{
-				// Move agents in
-				const pass = encoder.beginComputePass();
-				pass.setPipeline(moveAgentsInPipeline);
-				pass.setBindGroup(0, moveInBindGroups[HYPERPARAMS.iterations % 2]);
-				pass.dispatchWorkgroups((HYPERPARAMS.size * HYPERPARAMS.size) / 10, 1, 1); // TODO: math.ceil
-				pass.end();
-			}
+		// // Output the results
+		outputUniverse = Universe.from_result(result, HYPERPARAMS.size, 3, SEED);
+		console.log('output', outputUniverse.nodes.slice(0, 10));
 
-			// Only show output if we are probing
-			if (probe) {
-				// Encode a command to copy the results to a mappable buffer.
-				encoder.copyBufferToBuffer(
-					cellStateStorage[(HYPERPARAMS.iterations + 1) % 2],
-					0,
-					resultBuffer,
-					0,
-					resultBuffer.size
-				);
-			}
+		// console.time(`Time to read`);
+		await outputBuffers.orderResultBuffer.mapAsync(GPUMapMode.READ);
+		const orderResult = new Float32Array(outputBuffers.orderResultBuffer.getMappedRange().slice(0));
+		outputBuffers.orderResultBuffer.unmap();
 
-			HYPERPARAMS.iterations++;
+		const resultOrder = [...orderResult].reduce((acc, val) => acc + val, 0);
+		// console.timeEnd(`Time to read`);
 
-			// Finish encoding and submit the commands
-			device.queue.submit([encoder.finish()]);
-
-			if (probe) {
-				// Read results
-				await resultBuffer.mapAsync(GPUMapMode.READ);
-				const result = new Float32Array(resultBuffer.getMappedRange().slice(0));
-				resultBuffer.unmap();
-
-				// Output the results
-				outputUniverse = Universe.from_result(result, HYPERPARAMS.size, 2);
-				console.log(outputUniverse);
-				probe = false;
-			}
-		}
-
-		return iterate;
+		orderParams = [...orderParams, { iteration: HYPERPARAMS.iterations, orderParam: resultOrder }];
+		loading = false;
 	}
-
-	function draw() {
-		iterateFunction?.();
-		requestAnimationFrame(draw);
-	}
-
-	function togglePlay() {
-		console.log('togglePlay');
-		if (!$isPlaying && iterateFunction) {
-			playInterval = setInterval(iterateFunction, 10);
-			return isPlaying.set(true);
-		}
-
-		clearInterval(playInterval);
-		return isPlaying.set(false);
-	}
-
-	onMount(async () => {
-		iterateFunction = await main();
-		// iterateFunction?.();
-		draw();
-	});
 </script>
 
-<h1>Input</h1>
-<pre>{JSON.stringify(inputUniverse)}</pre>
-
-<button on:click={iterate}>iterate + 1</button>
-
-<h1>Results | iterations: {HYPERPARAMS.iterations}</h1>
-{#if iterateFunction}
+<h1 class="text-3xl">Iterations run: {HYPERPARAMS.iterations}</h1>
+{#if error}
+	<p>Something went wrong: {error}</p>
+	<!-- TODO: add reset button -->
+{:else if loading}
+	<p>We are loading</p>
+{:else}
+	<p>Nice we are loaded</p>
+	<input type="number" bind:value={do_iterations} />
 	<button
-		on:click={() => {
-			probe = true;
-			iterateFunction?.();
-		}}>Probe output</button
+		on:click={async () => {
+			console.time(`Time to iterate total: ${do_iterations}`);
+			await iterate(do_iterations);
+			console.timeEnd(`Time to iterate total: ${do_iterations}`);
+		}}>iterate {do_iterations} times</button
 	>
-	<button on:click={togglePlay}>
-		Toggle play | {$isPlaying ? 'now playing' : 'paused'}
-	</button>
-{/if}
 
-{#if outputUniverse}
-	<p>
-		total red agents: {outputUniverse.nodes.reduce((acc, node) => acc + node.red_agents, 0)}
+	<p class="m-4">
+		{JSON.stringify(orderParams)}
 	</p>
 
-	<p>
-		total blue agents: {outputUniverse.nodes.reduce((acc, node) => acc + node.blue_agents, 0)}
-	</p>
-
-	<Canvas universe={outputUniverse} />
+	{#if outputUniverse}
+		<Canvas universe={outputUniverse} />
+	{/if}
 {/if}

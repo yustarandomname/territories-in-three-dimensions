@@ -1,8 +1,8 @@
 import type { CompleteGpuStore } from "../vision/gpuStore";
 
 export default async function iterate(amount: number, { device, pipelines, hyperparameters, storageBuffers, outputBuffers }: CompleteGpuStore) {
-    const encoder = device.createCommandEncoder();
     const HYPERPARAMS = { ...hyperparameters };
+    const encoder = device.createCommandEncoder();
     const dispatchWorkgroups = Math.ceil(Math.pow(HYPERPARAMS.size, 3) / 100); //TODO: make this hyperparam
 
     // Setup pipeline
