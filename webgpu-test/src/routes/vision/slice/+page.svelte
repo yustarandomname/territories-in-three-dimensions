@@ -103,12 +103,6 @@
 		console.log(performance.now() - timeStart);
 
 		playConfettti();
-	}
-
-	async function resetPlayAll() {
-		await resetFn();
-
-		await playAll();
 
 		console.log(
 			`final orderparam for beta = ${$HYPERPARAMS.beta.toExponential()} and seed = ${
@@ -116,6 +110,12 @@
 			} and total agents = ${$HYPERPARAMS.total_agents} is`,
 			$orderParams.at(-1)
 		);
+	}
+
+	async function resetPlayAll() {
+		await resetFn();
+
+		await playAll();
 	}
 </script>
 

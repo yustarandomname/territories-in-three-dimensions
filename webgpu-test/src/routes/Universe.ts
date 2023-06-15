@@ -45,7 +45,7 @@ export class Universe implements ToF32Buffer {
             this.nodes.push(node);
         }
 
-        console.log("Creating universe with " + this.total_size + " nodes");
+        // console.log("Creating universe with " + this.total_size + " nodes");
 
         // Add red agents to random nodes
         for (let ar = 0; ar < total_agents; ar++) {
