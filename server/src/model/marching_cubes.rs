@@ -16,6 +16,8 @@ impl Universe {
         // println!("indices: {:?}", indices);
 
         assert!(indices.len() % 3 == 0);
+
+        return (vertices, indices);
     }
 
     fn get_node(&self, x: u32, y: u32, z: u32) -> Option<&Node> {

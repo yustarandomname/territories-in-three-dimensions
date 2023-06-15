@@ -4,6 +4,8 @@
 	import { Universe } from '../Universe';
 	import { HyperParameters } from '../vision/gpuStore';
 	import Canvas from './Canvas.svelte';
+	import Input from '../vision/components/Input.svelte';
+	import Button from '../vision/components/Button.svelte';
 
 	type OrderParams = { iteration: number; orderParam: number }[];
 
@@ -16,7 +18,7 @@
 	let orderParams: OrderParams = [];
 	const SEED = 12345;
 
-	let total_agents = 50000;
+	let total_agents = 500000;
 	let do_iterations = 10000;
 
 	let inputUniverse = new Universe(100, total_agents, 2, SEED);
@@ -26,23 +28,16 @@
 	const HYPERPARAMS = {
 		lambda: 0.5,
 		gamma: 0.5,
-		beta: 3 * 1e-5,
+		beta: 5 * 1e-5,
 		size: inputUniverse.size,
 		iterations: 0,
 		total_agents: total_agents,
 		seed: SEED
 	};
 
-	onMount(async () => {
-		loading = true;
-		const adapter = await navigator.gpu?.requestAdapter({ powerPreference: 'high-performance' });
-		const gpuDevice = await adapter?.requestDevice();
-		if (!gpuDevice) {
-			console.log('need a browser that supports WebGPU');
-			error = 'need a browser that supports WebGPU this demo only works in Chrome version 114+ ';
-			return;
-		}
-		device = gpuDevice;
+	async function reset() {
+		HYPERPARAMS.iterations = 0;
+		orderParams = [];
 
 		const hyperparamsArray = new Float32Array([
 			HYPERPARAMS.lambda,
@@ -57,13 +52,28 @@
 		const universeArray = new Float32Array(inputUniverse.to_f32_buffer());
 
 		const gpuSetup = await setup2D(
-			gpuDevice,
+			device,
 			{ hyperparamsArray, universeArray },
 			HyperParameters.fromObject(HYPERPARAMS)
 		);
 		pipelines = gpuSetup.pipelines;
 		storageBuffers = gpuSetup.storageBuffers;
 		outputBuffers = gpuSetup.outputBuffers;
+	}
+
+	onMount(async () => {
+		loading = true;
+
+		const adapter = await navigator.gpu?.requestAdapter({ powerPreference: 'high-performance' });
+		const gpuDevice = await adapter?.requestDevice();
+		if (!gpuDevice) {
+			console.log('need a browser that supports WebGPU');
+			error = 'need a browser that supports WebGPU this demo only works in Chrome version 114+ ';
+			return;
+		}
+		device = gpuDevice;
+
+		await reset();
 
 		error = '';
 		loading = false;
@@ -72,6 +82,7 @@
 	async function iterate(amount: number) {
 		if (!pipelines || loading || !device) return;
 		loading = true;
+		console.log(HYPERPARAMS);
 
 		const encoder = device.createCommandEncoder();
 		const dispatchWorkgroups = Math.ceil(Math.pow(HYPERPARAMS.size, 2) / 100); //TODO: make this hyperparam
@@ -129,8 +140,13 @@
 		outputBuffers.resultBuffer.unmap();
 
 		// // Output the results
-		outputUniverse = Universe.from_result(result, HYPERPARAMS.size, 3, SEED);
+		outputUniverse = Universe.from_result(result, HYPERPARAMS.size, 2, SEED);
 		console.log('output', outputUniverse.nodes.slice(0, 10));
+
+		console.log(
+			'red_agents',
+			outputUniverse.nodes.reduce((acc, val) => acc + val.red_agents, 0)
+		);
 
 		// console.time(`Time to read`);
 		await outputBuffers.orderResultBuffer.mapAsync(GPUMapMode.READ);
@@ -160,6 +176,15 @@
 			await iterate(do_iterations);
 			console.timeEnd(`Time to iterate total: ${do_iterations}`);
 		}}>iterate {do_iterations} times</button
+	>
+
+	<Input label="beta" input={HYPERPARAMS.beta.toExponential()} bind:value={HYPERPARAMS.beta} />
+	<Button
+		selected
+		on:click={async () => {
+			await reset();
+			iterate(do_iterations);
+		}}>Reset and iterate</Button
 	>
 
 	<p class="m-4">
