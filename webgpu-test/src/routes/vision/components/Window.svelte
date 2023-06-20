@@ -51,7 +51,6 @@
 					</div>
 				{:else}
 					<div
-						on:mouseleave={() => (showExpand = false)}
 						in:fly={{ y: -20, duration: 750 }}
 						out:fly={{ y: 20, duration: 500 }}
 						style="border-radius: 2.5rem; min-width: 45rem;"
@@ -79,7 +78,15 @@
 							>
 						</div>
 
-						<slot name="ornamentExpand" {selectedTab} />
+						<form
+							on:submit={() => {
+								showExpand = false;
+								dispatch('saveSettings');
+							}}
+						>
+							<slot name="ornamentExpand" {selectedTab} />
+							<input class="hidden" type="submit" on:submit={() => console.log('submit sucess')} />
+						</form>
 					</div>
 				{/if}
 			</div>
@@ -115,7 +122,7 @@
 	.ornament {
 		transition: all 0.3s ease-in-out;
 		transform-style: preserve-3d;
-		transform: rotateX(5deg) translateX(-50%);
+		transform: rotateX(2deg) translateX(-50%);
 		box-shadow: -1px -2px 1px 0px rgba(255, 255, 255, 0.1);
 		@apply absolute top-0 left-1/2;
 		&:hover {

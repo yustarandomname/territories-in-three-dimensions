@@ -7,6 +7,7 @@ export type Settings = {
     orderScale: "logarithmic" | "linear";
     densityType: "relative" | "absolute",
     autoPlaySteps: AutoPlaySteps;
+    autoPlayBetas: number[];
 }
 
 let defaultAutoPlaySteps: AutoPlaySteps = [
@@ -22,7 +23,8 @@ let defaultSettings: Settings = {
     darkMode: "auto",
     orderScale: "logarithmic",
     densityType: "absolute",
-    autoPlaySteps: defaultAutoPlaySteps
+    autoPlaySteps: defaultAutoPlaySteps,
+    autoPlayBetas: [1e-5]
 }
 
 function createSettingStore() {

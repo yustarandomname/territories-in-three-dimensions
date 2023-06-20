@@ -44,8 +44,8 @@
 		{ name: 'Archive', icon: mdiArchive, url: 'archive' }
 	];
 
-	let agentsPerCell = HYPERPARAMS.total_agents / Math.pow(HYPERPARAMS.size, 3);
-	$: HYPERPARAMS.total_agents = agentsPerCell * Math.pow(HYPERPARAMS.size, 3);
+	// let agentsPerCell = HYPERPARAMS.total_agents / Math.pow(HYPERPARAMS.size, 3);
+	// $: HYPERPARAMS.total_agents = agentsPerCell * Math.pow(HYPERPARAMS.size, 3);
 
 	setContext('layoutData', layoutData);
 	$: layoutData.HYPERPARAMS.set(HYPERPARAMS);
@@ -108,13 +108,13 @@
 	function playConfettti() {
 		jsConfetti.addConfetti();
 
-		setTimeout(() => {
-			jsConfetti.addConfetti();
-		}, 1500);
+		// setTimeout(() => {
+		// 	jsConfetti.addConfetti();
+		// }, 1500);
 
-		setTimeout(() => {
-			jsConfetti.addConfetti();
-		}, 3000);
+		// setTimeout(() => {
+		// 	jsConfetti.addConfetti();
+		// }, 3000);
 
 		var audio = new Audio('/trumpets.mp3');
 		audio.play();
@@ -200,7 +200,7 @@
 								input={HYPERPARAMS.total_agents.toString()}
 								bind:value={HYPERPARAMS.total_agents}
 							/>
-							<Input label="per cell" input={agentsPerCell.toString()} bind:value={agentsPerCell} />
+							<!-- <Input label="per cell" input={agentsPerCell.toString()} bind:value={agentsPerCell} /> -->
 						</div>
 					</div>
 				{:else}

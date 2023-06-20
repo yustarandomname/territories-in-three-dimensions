@@ -79,7 +79,7 @@
 		for (let step of $settingStore.autoPlaySteps) {
 			settingStore.set('autoPlaySteps', $settingStore.autoPlaySteps);
 			iterateStep.set(step.steps);
-			for (let amount of new Array(step.amount).fill(0)) {
+			for (let _ of new Array(step.amount).fill(0)) {
 				await iterate();
 
 				playedSteps += step.steps;
@@ -109,6 +109,10 @@
 				$HYPERPARAMS.seed
 			} and total agents = ${$HYPERPARAMS.total_agents} is`,
 			$orderParams.at(-1)
+		);
+
+		navigator.clipboard.writeText(
+			`{"beta": ${$HYPERPARAMS.beta.toExponential()},"order_param":${$orderParams.at(-1)?.result}},`
 		);
 	}
 

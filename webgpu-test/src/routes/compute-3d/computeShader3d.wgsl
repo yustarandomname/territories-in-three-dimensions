@@ -57,6 +57,10 @@ fn random(state: vec4<u32>) -> RandomResult {
 }
 
 
+/*
+* @param i: index of node
+* @return array of 6 indeces of neighbours
+*/
 fn get_neightbour_index(i: u32) -> array<u32, 6> {
     let size = u32(hyperparameters.size);
     
@@ -141,6 +145,7 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
     var cell_red_agents_out = array<f32, 6>(0, 0, 0, 0, 0, 0);
     var cell_blue_agents_out = array<f32, 6>(0, 0, 0, 0, 0, 0);
 
+    // Accumulate strengths of neighbours - used for calculating probabilities
     var red_strength_acc = array<f32, 6>(state_out[neighbour_index[0]].red_strength, 0, 0, 0, 0, 0);
     var blue_strenths_acc = array<f32, 6>(state_out[neighbour_index[0]].blue_strength, 0, 0, 0, 0, 0);
 

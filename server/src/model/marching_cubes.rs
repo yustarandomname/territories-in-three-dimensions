@@ -3,7 +3,7 @@ use isosurface::{marching_cubes::MarchingCubes, source::Source};
 use super::{node::Node, species::AgentSpecies, Universe};
 
 impl Universe {
-    fn generate_mc(&self) {
+    fn generate_mc(&self) -> (Vec<f32>, Vec<u32>) {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
         let source = &self;
