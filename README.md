@@ -12,6 +12,8 @@ This will start up a server on the port 8080. You can then open up a browser and
 
 ---
 
+update this
+
 ## [SERVER] Endpoints
 > WARNING: For now only the CPU endpoint is implemented. The GPU endpoint is still in development.
 
