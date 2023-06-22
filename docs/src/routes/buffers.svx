@@ -1,0 +1,35 @@
+---
+title: Buffer decoratorss
+tags: [vertex, fragment, compute]
+language: WGSL
+---
+
+
+
+## Buffer
+
+```rust
+@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+```
+
+We declare its type as array<f32> which means an array of 32bit floating point values. 
+We tell it we're going to specify this array on binding location 0 (the binding(0)) in 
+bindGroup 0 (the @group(0)).
+
+```JavaScript
+  // create a buffer on the GPU to hold our computation
+  // input and output
+  const workBuffer = device.createBuffer({
+    label: 'work buffer',
+    size: input.byteLength,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+  });
+  // Copy our input data to that buffer
+  device.queue.writeBuffer(workBuffer, 0, input);
+  ```
+
+
+## Buffer usage
+- `GPUBufferUsage.STORAGE`: The buffer will be used as a storage buffer in a shader. Makes it compatable with `var<storage, ..>`.
+- `GPUBufferUsage.COPY_SRC`: The buffer will be used to copy data out of it.
+- `GPUBufferUsage.COPY_DST`: The buffer will be used to copy data into it.

@@ -3,7 +3,7 @@ use isosurface::{marching_cubes::MarchingCubes, source::Source};
 use super::{node::Node, species::AgentSpecies, Universe};
 
 impl Universe {
-    fn generate_mc(&self) {
+    fn generate_mc(&self) -> (Vec<f32>, Vec<u32>) {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
         let source = &self;
@@ -13,7 +13,11 @@ impl Universe {
         mc.extract(self, &mut vertices, &mut indices);
 
         println!("Vertices: {:?}", vertices);
-        println!("indices: {:?}", indices);
+        // println!("indices: {:?}", indices);
+
+        assert!(indices.len() % 3 == 0);
+
+        return (vertices, indices);
     }
 
     fn get_node(&self, x: u32, y: u32, z: u32) -> Option<&Node> {
@@ -33,26 +37,25 @@ impl Universe {
 
 impl Source for Universe {
     fn sample(&self, x: f32, y: f32, z: f32) -> f32 {
-        println!("Sample: {} {} {}", x, y, z);
-        0.0
-        // let xu = (x.clone() * (self.size - 1) as f32) as u32;
-        // let yu = (y.clone() * (self.size - 1) as f32) as u32;
-        // let zu = (z.clone() * (self.size - 1) as f32) as u32;
+        let xu = (x.clone() * (self.size - 1) as f32) as u32 % self.size;
+        let yu = (y.clone() * (self.size - 1) as f32) as u32 % self.size;
+        let zu = (z.clone() * (self.size - 1) as f32) as u32 % self.size;
 
-        // match self.get_node(xu, yu, zu) {
-        //     Some(node) => {
-        //         let red_agents = node.get_agents_with_species(&AgentSpecies::Red);
-        //         let blue_agents = node.get_agents_with_species(&AgentSpecies::Blue);
+        // println!("SampleXU: {} {} {}", xu, yu, zu);
+        match self.get_node(xu, yu, zu) {
+            Some(node) => {
+                let red_agents = node.get_agents_with_species(&AgentSpecies::Red);
+                let blue_agents = node.get_agents_with_species(&AgentSpecies::Blue);
 
-        //         println!("Node IS found: {} {} {} | {} {} {}", xu, yu, zu, x, y, z);
+                // println!("Node IS found: {} {} {} | {} {} {}", xu, yu, zu, x, y, z);
 
-        //         red_agents as f32 - blue_agents as f32
-        //     }
-        //     None => {
-        //         println!("Node not found: {} {} {} | {} {} {}", xu, yu, zu, x, y, z);
-        //         0.0
-        //     }
-        // }
+                red_agents as f32 - blue_agents as f32
+            }
+            None => {
+                println!("Node not found: {} {} {} | {} {} {}", xu, yu, zu, x, y, z);
+                0.0
+            }
+        }
     }
 }
 
@@ -64,7 +67,8 @@ mod test_mc {
 
     #[test]
     fn test_mc() {
-        let universe = Universe::new(3, 100, Dims::Three, None);
+        let mut universe = Universe::new(10, 10000, Dims::Three, None);
+        universe.iterate(1000);
 
         universe.generate_mc();
     }

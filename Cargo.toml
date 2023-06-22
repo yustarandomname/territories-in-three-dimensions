@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "webgpu-test/my-crate",
+    "server"
+]
