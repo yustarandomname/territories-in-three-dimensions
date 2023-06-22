@@ -32,8 +32,8 @@
 	}
 
 	let materials: MeshPhongMaterial[] = [
-		new MeshPhongMaterial({ color: '#dc2626', side: FrontSide, transparent: true, opacity: 0.9 }),
-		new MeshPhongMaterial({ color: '#1d4ed8', side: BackSide, transparent: true, opacity: 0.9 })
+		new MeshPhongMaterial({ color: '#dc2626', side: BackSide, transparent: true, opacity: 0.9 }),
+		new MeshPhongMaterial({ color: '#1d4ed8', side: FrontSide, transparent: true, opacity: 0.9 })
 	];
 </script>
 

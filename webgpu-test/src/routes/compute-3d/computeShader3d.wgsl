@@ -108,8 +108,33 @@ fn total_strength(neighbour_indeces: array<u32, 6>) -> vec2<f32> {
     let gamma = hyperparameters.gamma;
     let beta = hyperparameters.beta * xi_str;
 
-    let red_graffiti = state_in[i].red_graffiti * lambda + state_in[i].red_agents * gamma;
-    let blue_graffiti = state_in[i].blue_graffiti * lambda + state_in[i].blue_agents * gamma;
+    var red_graffiti = state_in[i].red_graffiti * lambda;
+    var blue_graffiti = state_in[i].blue_graffiti * lambda;
+
+    let seed = vec4<u32>(id.x, id.x * 377, id.x * 397, id.x * 121);
+    var prng = random(seed);
+    
+    // Make this a hyper parameter
+    if (true) {
+        red_graffiti += state_in[i].red_agents * gamma;
+        blue_graffiti += state_in[i].blue_agents * gamma;
+    } else {
+        for (var ri: u32 = 0; ri < u32(state_in[i].red_agents); ri++) {
+            prng = random(prng.state);
+
+            if (prng.value >= 0.5) {
+                red_graffiti += 1;
+            }
+        }
+
+        for (var bi: u32 = 0; bi < u32(state_in[i].blue_agents); bi++) {
+            prng = random(prng.state);
+
+            if (prng.value >= 0.5) {
+                blue_graffiti += 1;
+            }
+        }
+    }
 
     state_out[i].red_agents = 0;
     state_out[i].blue_agents = 0;

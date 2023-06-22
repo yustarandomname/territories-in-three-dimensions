@@ -39,22 +39,24 @@ export class Universe implements ToF32Buffer {
         let prng = seedrandom((seed).toString() + dimensions.toString() + size.toString() + total_agents.toString());
         this.total_size = Math.pow(size, dimensions);
 
+        let agents_per_node = Math.floor(total_agents / this.total_size);
+
         // Create nodes
         for (let i = 0; i < this.total_size; i++) {
-            let node = new Node(0, 0, 0, 0, 0, 0);
+            let node = new Node(agents_per_node, agents_per_node, 0, 0, 0, 0);
             this.nodes.push(node);
         }
 
         // console.log("Creating universe with " + this.total_size + " nodes");
 
         // Add red agents to random nodes
-        for (let ar = 0; ar < total_agents; ar++) {
+        for (let ar = 0; ar < total_agents - (agents_per_node * this.total_size); ar++) {
             let node = random(prng, 0, this.total_size);
             this.nodes[node].red_agents++;
         }
 
         // Add blue agents to random nodes
-        for (let ab = 0; ab < total_agents; ab++) {
+        for (let ab = 0; ab < total_agents - (agents_per_node * this.total_size); ab++) {
             let node = random(prng, 0, this.total_size);
             this.nodes[node].blue_agents++;
         }
