@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
-	import init, { Universe, mc } from 'my-crate';
+	import init, { Universe, mc } from '../assets/my_crate.js';
 	import type { LayoutData } from '../layoutData';
 	import { Canvas } from '@threlte/core';
 	import MCScene from './MCScene.svelte';
