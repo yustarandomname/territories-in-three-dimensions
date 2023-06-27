@@ -7,6 +7,7 @@
 
 	export let title = 'Window';
 	export let path: String | undefined;
+	export let showUI = false;
 
 	const dispatch = createEventDispatcher();
 
@@ -24,12 +25,14 @@
 	<div class="relative bg-slate-200/80 rounded-3xl">
 		<!-- Title items -->
 
-		<div class="absolute top-0 m-4 rounded-xl p-3 bg-gray-400/50 backdrop-blur-lg">
-			<h1 class="text-lg font-bold text-white-200">{title}</h1>
-		</div>
+		{#if showUI}
+			<div class="absolute top-0 m-4 rounded-xl p-3 bg-gray-400/50 backdrop-blur-lg">
+				<h1 class="text-lg font-bold text-white-200">{title}</h1>
+			</div>
+		{/if}
 
 		<!-- Ornament buttom -->
-		{#if $$slots.ornament}
+		{#if $$slots.ornament && showUI}
 			<div class="z-[100] bottom-8 absolute w-full transform ornamentContainer">
 				{#if !showExpand}
 					<div
@@ -93,7 +96,7 @@
 		{/if}
 
 		<!-- Tab group -->
-		{#if $$slots.tabGroup}
+		{#if $$slots.tabGroup && showUI}
 			<div class="-left-12 absolute flex h-full flex-col justify-center">
 				<div
 					class="tabGroup bg-gray-600/60 hover:bg-gray-600/70 transition-colors backdrop-blur-lg h-fit rounded-full flex flex-col py-3 px-2 gap-2"

@@ -28,6 +28,8 @@
 		seed: 123
 	});
 
+	let showUI = true;
+
 	let confettiEl: HTMLCanvasElement | undefined;
 	let jsConfetti: JSConfetti;
 
@@ -131,7 +133,17 @@
 			jsConfetti = new JSConfetti({ canvas: confettiEl });
 		}
 	});
+
+	function handleKeydown(e: KeyboardEvent) {
+		// If the user presses meta + K keys, then prevent default
+		if (e.metaKey && e.code === 'KeyK') {
+			e.preventDefault();
+			showUI = !showUI;
+		}
+	}
 </script>
+
+<svelte:window on:keydown={handleKeydown} />
 
 {#if $hasError.hasError}
 	<div
@@ -160,11 +172,13 @@
 	class:auto={$settingStore.darkMode == 'auto'}
 >
 	{#if !$hasError.hasError}
-		<Window path={data.path} title="Iterations: {iterations}" on:saveSettings={reset}>
+		<Window {showUI} path={data.path} title="Iterations: {iterations}" on:saveSettings={reset}>
 			<slot />
 
 			<svelte:fragment slot="ornament">
-				<Ornament bind:iterateStep bind:sliceIndex on:iterate={iterate} on:reset={reset} />
+				{#if showUI}
+					<Ornament bind:iterateStep bind:sliceIndex on:iterate={iterate} on:reset={reset} />
+				{/if}
 			</svelte:fragment>
 
 			<div slot="ornamentExpand" let:selectedTab>

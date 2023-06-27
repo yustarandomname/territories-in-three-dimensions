@@ -5,7 +5,7 @@
 	import { Canvas } from '@threlte/core';
 	import MCScene from './MCScene.svelte';
 
-	const { outputUniverse } = getContext<LayoutData>('layoutData');
+	const { outputUniverse, HYPERPARAMS } = getContext<LayoutData>('layoutData');
 
 	let bufferVertices: Float32Array;
 	let bufferIndeces: Uint32Array;
@@ -29,13 +29,26 @@
 
 	$: wasmInitialized && $outputUniverse && reloadBuffers();
 
+	function downloadCanvas(): void {
+		const canvas = document.querySelector('#canvas-3d canvas') as HTMLCanvasElement | undefined;
+		if (!canvas) return;
+
+		let canvasUrl = canvas.toDataURL('image/webp', 0.5);
+		const createEl = document.createElement('a');
+		createEl.href = canvasUrl;
+		const name = JSON.stringify($HYPERPARAMS);
+		createEl.download = name + '-image-3d.webp';
+		createEl.click();
+		createEl.remove();
+	}
+
 	onMount(async () => {
 		await init();
 		wasmInitialized = true;
 	});
 </script>
 
-<div class="w-[45rem] h-[45rem]">
+<div id="canvas-3d" class="w-[45rem] h-[45rem]">
 	<Canvas>
 		{#if bufferVertices && bufferIndeces}
 			<MCScene {bufferVertices} {bufferIndeces} />
